@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Role;
 
 class UserController extends Controller
 {
@@ -16,8 +17,8 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $roles = \App\Models\Role::all();
-        return view('admin.users.edit', compact('user'));
+        $roles = Role::all();
+        return view('admin.users.edit', compact('user', 'roles'));
     }
 
 
@@ -33,4 +34,12 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')->with('success', 'Данные пользователя успешно обновлены.');
     }
+
+    public function approved(User $user)
+    {
+        $user->update(['is_approved' => true]);
+
+        return redirect()->route('admin.users.index')->with('success', 'Пользователь успешно одобрен.');
+    }
+
 }

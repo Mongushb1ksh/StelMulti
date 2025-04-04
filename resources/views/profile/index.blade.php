@@ -25,8 +25,6 @@
             <p><strong>Email: </strong>{{ $user->email }}</p>
             <p><strong>Роль: </strong>{{ optional($user->role)->name ?? 'Нет роли' }}</p>
             <p><strong>Дата регистрации: </strong>{{ $user->created_at->format('d.m.Y') }}</p>
-
-            <pre>{{ print_r($user->toArray(), true) }}</pre>
         </div>
     </div>
 

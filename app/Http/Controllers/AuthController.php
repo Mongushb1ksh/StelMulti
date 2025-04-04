@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\UserRegisteredNotification;
+
 
 class AuthController extends Controller
 {
@@ -30,10 +32,16 @@ class AuthController extends Controller
             $user->name = $validatedData['name'];
             $user->email = $validatedData['email'];
             $user->password = Hash::make($validatedData['password']);
-            $user->role_id = 1;
+            $user->role_id = 2;
+            $user->is_approved = false;
             $user->save();
 
-            return redirect('/login')->with('success', 'Пользователь успешно авторизован');
+            $admin = User::where('role_id', 1)->first(); // Находим администратора
+            if ($admin) {
+                $admin->notify(new UserRegisteredNotification($user));
+            }
+
+            return redirect('/login')->with('info', 'Регистрация завершена. Ожидайте подтверждения администратора.');
         } catch (\Exception $e) {
             Log::error('Ошибка при регистрации: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Произошла ошибка при регистрации. Попробуйте снова.']);
@@ -42,33 +50,33 @@ class AuthController extends Controller
     }
 
     public function login(Request $request)
-    {
-
-        try{
-            $validatedData = $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string|min:6',
-            ]);
-        
-            if (Auth::attempt(['email' => $validatedData['email'], 'password' => $validatedData['password']])) {
-                return redirect('/home')->with('success', 'Вы успешно вошли в систему');
-            }
-            return back()->withErrors(['email' => 'Неверный email или пароль']);
-        } catch (\Exception) {
-            return back()->withErrors(['error' => 'Произошла ошибка при входе. Попробуйте снова.']);
-        }  
-
-
+{
+    try {
+      
         $validatedData = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
-    
-        if (Auth::attempt(['email' => $validatedData['email'], 'password' => $validatedData['password']])) {
-            return redirect('/home')->with('success', 'Вы успешно вошли в систему');
+
+       
+        $user = User::where('email', $validatedData['email'])->first();
+
+        if ($user && !$user->is_approved) {
+            return back()->withErrors(['email' => 'Ваш аккаунт еще не одобрен администратором.']);
         }
-        return back()->withErrors(['email' => 'Неверный email или пароль']);
+
+       
+        if (Auth::attempt(['email' => $validatedData['email'], 'password' => $validatedData['password']])) {
+            return redirect('/home')->with('success', 'Вы успешно вошли в систему.');
+        }
+
+        return back()->withErrors(['email' => 'Неверный email или пароль.']);
+    } catch (\Exception $e) {
+        Log::error('Ошибка при входе: ' . $e->getMessage());
+
+        return back()->withErrors(['error' => 'Произошла ошибка при входе. Попробуйте снова.']);
     }
+}
 
 
     public function logout(Request $request)
