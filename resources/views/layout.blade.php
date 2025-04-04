@@ -37,6 +37,11 @@
             <li><a href="#">Продажи</a></li>
             <li><a href="#">Производство</a></li>
             <li><a href="#">Финансы</a></li>
+            @if(optional(auth()->user())->role?->name === 'Admin')
+                <li><a href="/admin/users">Пользователи</a></li>
+            @endif
+            <li><a href="/profile">Профиль</a></li>
+            <li><a href="#">Настройки</a></li>
             @endif
         </ul>
     </aside>

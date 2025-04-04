@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -17,6 +18,18 @@ Route::get('/login', function () {
     return view('auth.login');
 });
 
+
+Route::middleware('auth')->group(function() {
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/change-password', [ProfileController::class, 'changePassword'])->name('profile.change-password');
+});
+
+Route::middleware('auth', 'role:Admin')->group(function() {
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::put('/admin/users/{user}/edit', [UserController::class, 'update'])->name('admin.users.update');
+    Route::get('/admin/users/{user}', [UserController::class, 'edit'])->name('admin.users.update');
+});
 
 Route::post('/login/show', [AuthController::class, 'login']);
 Route::post('/register/show', [AuthController::class, 'register']);
