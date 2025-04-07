@@ -10,6 +10,35 @@
         </div>
     @endif
 
+    <form method="GET" class="filters">
+        <label for="status">Статус:</label>
+        <select name="status" id="status">
+            <option value="">Все</option>
+            <option value="new">Новый</option>
+            <option value="processing">В обработке</option>
+            <option value="production">В производстве</option>
+            <option value="completed">Готово</option>
+            <option value="shipped">Отгружено</option>
+        </select>
+
+        <label for="client">Клиент:</label>
+        <select name="client" id="client">
+            <option value="">Все</option>
+            @foreach($users as $user)
+                <option value="{{ $user->id }}">{{ $user->name }}</option>
+            @endforeach
+        </select>
+
+        <label for="from_date">Дата от:</label>
+        <input type="date" name="from_date" id="from_date">
+
+        <label for="to_date">Дата до:</label>
+        <input type="date" name="to_date" id="to_date">
+
+        <button type="submit">Применить фильтры</button>
+        <a type="button" href="/orders/create">Добавить заказ</a>
+    </form>
+
     <table class="table">
         <thead>
             <tr>

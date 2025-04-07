@@ -1,20 +1,23 @@
 @extends('layout')
 
 @section('main_content')
-<div class="admin-container">
+<div class="order-container">
     <h2>Создание заказа</h2>
 
     <form action="{{ route('orders.store') }}" method="POST">
         @csrf
 
-        <div>
-            <label for="user_id">Клиент</label>
-            <select name="user_id" id="user_id" required>
-                @foreach($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                @endforeach
-            </select>
-        </div>
+        <!-- Выбор клиента (для менеджеров) -->
+        @if(auth()->user()->role->name === 'Менеджер по продажам')
+            <div>
+                <label for="user_id">Клиент</label>
+                <select name="user_id" id="user_id" required>
+                    @foreach($users as $user)
+                        <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
 
         <div>
             <label>Товары</label>

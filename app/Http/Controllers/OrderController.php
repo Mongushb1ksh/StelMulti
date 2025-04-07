@@ -3,25 +3,45 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    // Просмотр всех заказов
-    public function index()
+
+
+
+
+
+    public function index(Request $request)
     {
-        $orders = Order::with('user', 'items')->paginate(10);
-        return view('orders.index', compact('orders'));
+        $query = Order::with('user', 'items');
+
+        if($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if($request->has('client')) {
+            $query->where('user_id', $request->client);
+        }
+        
+        if($request->has('from_date') && $request->has('to_date')) {
+            $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
+        }
+
+        $orders = $query->paginate(10);
+
+        $users = User::all();
+
+        return view('orders.index', compact('orders', 'users'));
     }
 
-    // Создание заказа
     public function create()
     {
         return view('orders.create');
     }
 
-    // Сохранение заказа
     public function store(Request $request)
     {
         $validatedData = $request->validate([

@@ -34,6 +34,7 @@
             @else
             <li><a href="/home">Главная</a></li>
             <li><a href="/catalog">Готовые изделия</a></li>
+            <li><a href="/orders">Заказы</a></li>
             <li><a href="#">Клиенты</a></li>
             <li><a href="#">Продажи</a></li>
             <li><a href="#">Производство</a></li>

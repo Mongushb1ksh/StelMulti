@@ -18,4 +18,7 @@
         <button type="submit" class="btn btn-success">Добавить в заказ</button>
     </form>
 </div>
+
+
+
 @endsection
