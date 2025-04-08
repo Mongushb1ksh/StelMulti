@@ -34,8 +34,6 @@
 
         <label for="to_date">Дата до:</label>
         <input type="date" name="to_date" id="to_date">
-
-        <button type="submit">Применить фильтры</button>
         <a type="button" href="/orders/create">Добавить заказ</a>
     </form>
 
@@ -59,7 +57,9 @@
                     <td>{{ $order->total_price ?? 'N/A' }}</td>
                     <td>{{ $order->created_at->format('d.m.Y') }}</td>
                     <td>
+                        @if(auth()->user()->role->name !== 'Client')
                         <a href="{{ route('orders.show', $order) }}" class="btn btn-primary">Просмотр</a>
+                        @endif
                     </td>
                 </tr>
             @endforeach
