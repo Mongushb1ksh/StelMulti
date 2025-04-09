@@ -24,21 +24,19 @@ class OrderController extends Controller
         } else {
             $query = Order::with('user', 'items');
 
-                if($request->has('status')) {
-                    $query->where('status', $request->status);
-                }
-                
-                if($request->has('client')) {
-                    $query->where('user_id', $request->client);
-                }
-                
-                if($request->has('from_date') && $request->has('to_date')) {
-                    $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
-                }
-
-                $orders = $query->paginate(10);
-
-                $users = User::all();       
+            if($request->has('status') && $request->status !== '') {
+                $query->where('status', $request->status);
+            }
+            
+            if($request->has('client') && $request->client !== '') {
+                $query->where('user_id', $request->client);
+            }
+            
+            if($request->has('from_date') && $request->has('to_date')) {
+                $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
+            }
+            $orders = $query->paginate(10);
+            $users = User::all();       
         }
         return view('orders.index', compact('orders', 'users'));            
         
@@ -46,7 +44,7 @@ class OrderController extends Controller
 
     public function create()
     {
-        $users = User::all(); 
+        $users = Auth::user()->role->name === 'Admin' ? User::all() : null;
         return view('orders.create', compact('users'));
     }
 

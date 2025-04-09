@@ -7,8 +7,8 @@
     <form action="{{ route('orders.store') }}" method="POST">
         @csrf
 
-        <!-- Выбор клиента (для менеджеров) -->
-        @if(auth()->user()->role->name === 'Менеджер по продажам')
+        
+        @if(auth()->user()->role->name === 'Admin')
             <div>
                 <label for="user_id">Клиент</label>
                 <select name="user_id" id="user_id" required>

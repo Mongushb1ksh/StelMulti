@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -51,4 +52,12 @@ Route::middleware('auth')->prefix('orders')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/catalog', [ProductController::class, 'index'])->name('catalog.index');
     Route::get('/catalog/{product}', [ProductController::class, 'show'])->name('catalog.show');
+});
+
+
+Route::middleware('auth')->prefix('stock')->group(function () {
+    Route::get('/', [StockController::class, 'index'])->name('stock.index');
+    Route::post('/{product}/receipt', [StockController::class, 'receipt'])->name('stock.receipt');
+    Route::post('/{product}/consumption', [StockController::class, 'consumption'])->name('stock.consumption');
+    Route::post('/{product}/transfer', [StockController::class, 'transfer'])->name('stock.transfer');
 });

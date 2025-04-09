@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Клиент
-            $table->string('status')->default('new'); // Статус заказа
-            $table->decimal('total_price', 10, 2)->nullable(); // Общая стоимость
-            $table->text('notes')->nullable(); // Примечания
-            $table->timestamp('completed_at')->nullable(); // Дата завершения
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
+            $table->string('status')->default('new');
+            $table->decimal('total_price', 10, 2)->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });
     }

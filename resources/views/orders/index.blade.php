@@ -10,6 +10,7 @@
         </div>
     @endif
 
+    @if(auth()->user()->role->name === 'Admin')
     <form method="GET" class="filters">
         <label for="status">Статус:</label>
         <select name="status" id="status">
@@ -29,13 +30,10 @@
             @endforeach
         </select>
 
-        <label for="from_date">Дата от:</label>
-        <input type="date" name="from_date" id="from_date">
-
-        <label for="to_date">Дата до:</label>
-        <input type="date" name="to_date" id="to_date">
-        <a type="button" href="/orders/create">Добавить заказ</a>
+        <button type="submit" class="btn btn-primary">Применить фильтры</button>
+        <a type="button" class="btn btn-primary" href="/orders/create">Добавить заказ</a>
     </form>
+    @endif
 
     <table class="table">
         <thead>
@@ -45,7 +43,13 @@
                 <th>Статус</th>
                 <th>Общая стоимость</th>
                 <th>Дата создания</th>
-                <th>Действия</th>
+            
+                <th>
+                @if(auth()->user()->role->name === 'Admin')
+                    Действия
+                @endif   
+                </th>
+                 
             </tr>
         </thead>
         <tbody>
