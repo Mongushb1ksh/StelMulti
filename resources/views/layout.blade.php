@@ -43,6 +43,7 @@
             </a></li>
             <li><a href="#">Клиенты</a></li>
             <li><a href="#">Продажи</a></li>
+            <li><a href="/stock">Склад</a></li>
             <li><a href="#">Производство</a></li>
             <li><a href="#">Финансы</a></li>
             @if(optional(auth()->user())->role?->name === 'Admin')
