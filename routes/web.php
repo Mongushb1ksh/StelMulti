@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\ProductionController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -60,4 +61,16 @@ Route::middleware('auth')->prefix('stock')->group(function () {
     Route::post('/{product}/receipt', [StockController::class, 'receipt'])->name('stock.receipt');
     Route::post('/{product}/consumption', [StockController::class, 'consumption'])->name('stock.consumption');
     Route::post('/{product}/transfer', [StockController::class, 'transfer'])->name('stock.transfer');
+});
+
+
+Route::middleware('auth')->prefix('production')->group(function (){
+    Route::get('/', [ProductionController::class, 'index'])->name('production.index');
+    Route::get('/create', [ProductionController::class, 'create'])->name('production.create');
+    Route::post('/', [ProductionController::class, 'store'])->name('production.store');    
+    Route::post('/{task}/status', [ProductionController::class, 'updateStatus'])->name('production.update-status');    
+    Route::post('/{task}/quality-check', [ProductionController::class, 'quaityCheck'])->name('production.quality-check');    
+    Route::post('/reports', [ProductionController::class, 'reports'])->name('production.reports');    
+
+
 });
