@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Services\StockService;
 use App\Models\Product;
-use App\Models\StockOperation;
+use Illuminate\Http\Request;
 
 class StockController extends Controller
 {
+    protected $stockService;
+
+    public function __construct(StockService $stockService)
+    {
+        $this->stockService = $stockService;
+    }
+
     public function index()
     {
         $products = Product::paginate(10);
@@ -20,18 +27,17 @@ class StockController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product->increaseQuantity($validatedData['quantity']);
+        try {
+            $this->stockService->recordReceipt(
+                $product,
+                $validatedData['quantity'],
+                $request->input('notes')
+            );
 
-        StockOperation::create([
-            'product_id' => $product->id,
-            'operation_type' => 'receipt',
-            'quantity' => $validatedData['quantity'],
-            'notes' => $request->input('notes'),
-        ]);
-
-
-        return redirect()->route('stock.index')->with('success', 'Приход успешно зафиксирован.');
-     
+            return redirect()->route('stock.index')->with('success', 'Приход успешно зафиксирован.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Ошибка при фиксации прихода.']);
+        }
     }
 
     public function consumption(Request $request, Product $product)
@@ -41,19 +47,15 @@ class StockController extends Controller
         ]);
 
         try {
-            
-            $product->decreaseQuantity($validatedData['quantity']);
-
-            StockOperation::create([
-                'product_id' => $product->id,
-                'operation_type' => 'consumption',
-                'quantity' => $validatedData['quantity'],
-                'notes' => $request->input('notes'),
-            ]);
+            $this->stockService->recordConsumption(
+                $product,
+                $validatedData['quantity'],
+                $request->input('notes')
+            );
 
             return redirect()->route('stock.index')->with('success', 'Расход успешно зафиксирован.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => 'Ошибка при фиксации расхода.']);
         }
     }
 
@@ -65,23 +67,17 @@ class StockController extends Controller
         ]);
 
         try {
-            $product->decreaseQuantity($validatedData['quantity']);
-
             $toProduct = Product::find($validatedData['to_product_id']);
-            $toProduct->increaseQuantity($validatedData['quantity']);
 
-            StockOperation::create([
-                'product_id' => $product->id,
-                'operation_type' => 'transfer',
-                'quantity' => $validatedData['quantity'],
-                'notes' => "Перемещено на {$toProduct->name}",
-            ]);
+            $this->stockService->recordTransfer(
+                $product,
+                $toProduct,
+                $validatedData['quantity']
+            );
 
             return redirect()->route('stock.index')->with('success', 'Перемещение успешно зафиксировано.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => 'Ошибка при фиксации перемещения.']);
         }
     }
-
-
 }
