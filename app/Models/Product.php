@@ -4,34 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * 
- *
- * @property int $id
- * @property string $name
- * @property string|null $description
- * @property string $price
- * @property int $quantity
- * @property string|null $image
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $type
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\StockOperation> $stockOperations
- * @property-read int|null $stock_operations_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereImage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product wherePrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereQuantity($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereUpdatedAt($value)
- * @mixin \Eloquent
- */
 class Product extends Model
 {
     protected $fillable = [
@@ -42,22 +14,58 @@ class Product extends Model
         'image',
     ];
 
-
-    public function stockOperations(){
+    // Связь с операциями склада
+    public function stockOperations()
+    {
         return $this->hasMany(StockOperation::class);
     }
 
-    public function increaseQuantity($quantity)
+    // Увеличение количества товара (приход)
+    public function recordReceipt($quantity, $notes = null)
     {
         $this->increment('quantity', $quantity);
+        $this->logStockOperation('receipt', $quantity, $notes);
     }
 
-    public function decreaseQuantity($quantity)
+    // Уменьшение количества товара (расход)
+    public function recordConsumption($quantity, $notes = null)
     {
-        if($this->quantity < $quantity) {
+        if ($this->quantity < $quantity) {
             throw new \Exception('Недостаточно товара на складе.');
         }
         $this->decrement('quantity', $quantity);
+        $this->logStockOperation('consumption', $quantity, $notes);
+    }
+
+    // Перемещение товара между продуктами
+    public function recordTransfer(Product $toProduct, $quantity)
+    {
+        if ($this->quantity < $quantity) {
+            throw new \Exception('Недостаточно товара на складе.');
+        }
+
+        // Уменьшаем количество у текущего продукта
+        $this->decrement('quantity', $quantity);
+        $this->logStockOperation('transfer_out', $quantity, "Перемещено к {$toProduct->name}");
+
+        // Увеличиваем количество у целевого продукта
+        $toProduct->increment('quantity', $quantity);
+        $toProduct->logStockOperation('transfer_in', $quantity, "Перемещено от {$this->name}");
+    }
+
+    // Логирование операции
+    protected function logStockOperation($type, $quantity, $notes = null)
+    {
+        $this->stockOperations()->create([
+            'operation_type' => $type,
+            'quantity' => $quantity,
+            'notes' => $notes,
+        ]);
+    }
+
+    // Проверка доступности товара для заказа
+    public function isAvailableForOrder($quantity)
+    {
+        return $this->quantity >= $quantity;
     }
 }
-

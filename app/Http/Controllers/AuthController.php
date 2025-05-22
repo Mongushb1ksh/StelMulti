@@ -1,70 +1,44 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Services\UserService;
-use App\Services\AuthService;
-use Illuminate\Http\Request;
+ 
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    protected $userService;
-    protected $authService;
-
-    public function __construct(UserService $userService, AuthService $authService)
-    {
-        $this->userService = $userService;
-        $this->authService = $authService;
-    }
-
-    public function register(Request $request)
+    public function register(): RedirectResponse
     {
         try {
-            $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6|confirmed',
-                'role_id' => 'nullable|exists:roles,id',
-            ], [
-                'password.confirmed' => 'Пароли не совпадают.',
-            ]);
-
-            $this->userService->registerUser($validatedData);
-
-            return redirect('/login')->with('info', 'Регистрация завершена. Ожидайте подтверждения администратора.');
+            User::registerUser(request()->all());
+            return redirect('/login')->with('info', 'Регистрация завершена. Ожидайте подтверждения.');
         } catch (\Exception $e) {
-            Log::error('Ошибка при регистрации: ' . $e->getMessage());
+            Log::error('Registration error: '.$e->getMessage());
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function login(Request $request)
+    public function login(): RedirectResponse
     {
         try {
-            $validatedData = $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string|min:6',
-            ]);
-
-            $this->authService->login($validatedData);
-
-            return redirect('/home')->with('success', 'Вы успешно вошли в систему.');
+            User::attemptLogin(request()->all());
+            return redirect('/home')->with('success', 'Вы успешно вошли!');
         } catch (\Exception $e) {
-            Log::error('Ошибка при входе: ' . $e->getMessage());
+            Log::error('Login error: '.$e->getMessage());
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function logout(Request $request)
+    public function logout(): RedirectResponse
     {
         try {
-            $this->authService->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            User::logoutUser();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
             return redirect('/login')->with('success', 'Вы вышли из системы');
         } catch (\Exception $e) {
-            return redirect('/')->withErrors(['error' => 'Произошла ошибка при выходе. Попробуйте снова.']);
+            return redirect('/')->withErrors(['error' => 'Ошибка при выходе']);
         }
     }
 }

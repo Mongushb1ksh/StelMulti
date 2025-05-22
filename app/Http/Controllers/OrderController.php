@@ -2,71 +2,56 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\OrderService;
-use App\Models\User;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
-    protected $orderService;
-
-    public function __construct(OrderService $orderService)
-    {
-        $this->orderService = $orderService;
-    }
-
     public function index(Request $request)
     {
-        if (Auth::user()->role->name === 'Client') {
-            $orders = Order::where('user_id', Auth::id())->paginate(10);
-        } else {
-            $orders = $this->orderService->filterOrders($request);
-        }
+        $orders = Auth::user()->role->name === 'Client'
+            ? Order::getClientOrders()
+            : Order::with('user', 'items')
+                ->filter($request->only(['status', 'user_id']))
+                ->paginate(10);
 
-        $users = User::all();
-        return view('orders.index', compact('orders', 'users'));
+        return view('orders.index', [
+            'orders' => $orders,
+            'users' => User::all()
+        ]);
     }
 
     public function create()
     {
-        $users = Auth::user()->role->name === 'Admin' ? User::all() : null;
-        return view('orders.create', compact('users'));
+        return view('orders.create', [
+            'users' => Auth::user()->role->name === 'Admin' ? User::all() : null
+        ]);
     }
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'user_id' => 'nullable|exists:users,id',
-            'items' => 'required|array',
-            'items.*.product_name' => 'required|string',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
-        ]);
-
         try {
-            $this->orderService->createOrder($validatedData);
+            Order::createOrder($request->all());
             return redirect()->route('orders.index')->with('success', 'Заказ успешно создан.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Ошибка при создании заказа. Попробуйте еще раз.']);
+            return back()->withErrors(['error' => 'Ошибка при создании заказа: ' . $e->getMessage()]);
         }
     }
 
     public function updateStatus(Request $request, Order $order)
     {
-        $request->validate([
-            'status' => 'required|in:new,processing,production,completed,shipped',
-        ]);
-
-        $order->update(['status' => $request->status]);
-
-        return redirect()->route('orders.index')->with('success', 'Статус заказа обновлен.');
+        try {
+            $order->updateStatus($request->status);
+            return redirect()->route('orders.index')->with('success', 'Статус заказа обновлен.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Ошибка обновления статуса']);
+        }
     }
 
     public function show(Order $order)
     {
-        $order->load('user', 'items');
-        return view('orders.show', compact('order'));
+        return view('orders.show', ['order' => $order->load('user', 'items')]);
     }
 }

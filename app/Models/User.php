@@ -5,78 +5,93 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
-/**
- * 
- *
- * @property int $id
- * @property string $name
- * @property string $email
- * @property string $password
- * @property int $role_id
- * @property string|null $remember_token
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property int $is_approved
- * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
- * @property-read int|null $notifications_count
- * @property-read \App\Models\Role $role
- * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsApproved($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePassword($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRememberToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRoleId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
- * @mixin \Eloquent
- */
+
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    protected $fillable = ['name', 'email', 'password', 'role_id', 'is_approved'];
+    protected $hidden = ['password', 'remember_token'];
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'role_id',
-        'is_approved',
-    ];
+    protected function casts(): array
+    {
+        return ['password' => 'hashed'];
+    }
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    public function role(){
+    public function role()
+    {
         return $this->belongsTo(Role::class);
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public static function validateRegistration(array $data): array
     {
-        return [
-            'password' => 'hashed',
-        ];
+        $validator = Validator::make($data, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+            'role_id' => 'nullable|exists:roles,id',
+        ], [
+            'password.confirmed' => 'Пароли не совпадают.'
+        ]);
+
+        return $validator->validate();
+    }
+
+    public static function validateLogin(array $data): array
+    {
+        $validator = Validator::make($data, [
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        return $validator->validate();
+    }
+
+    public static function registerUser(array $data): self
+    {
+        try {
+            $validated = self::validateRegistration($data);
+            
+            return self::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role_id' => $validated['role_id'] ?? null,
+                'is_approved' => false
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Registration error: '.$e->getMessage());
+            throw $e;
+        }
+    }
+
+    public static function attemptLogin(array $credentials): void
+    {
+        $validated = self::validateLogin($credentials);
+
+        if (!Auth::attempt($validated)) {
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed')
+            ]);
+        }
+
+        if (!Auth::user()->is_approved) {
+            Auth::logout();
+            throw new \Exception('Ваш аккаунт ожидает подтверждения');
+        }
+    }
+
+    public static function logoutUser(): void
+    {
+        try {
+            Auth::logout();
+        } catch (\Exception $e) {
+            Log::error('Logout error: '.$e->getMessage());
+            throw $e;
+        }
     }
 }

@@ -11,16 +11,10 @@ use Illuminate\Http\Request;
 
 class ProductionController extends Controller
 {
-    protected $productionService;
-
-    public function __construct(ProductionService $productionService)
-    {
-        $this->productionService = $productionService;
-    }
-
     public function index()
     {
-        $tasks = ProductionTask::with('order', 'materials.material', 'workers.worker')->paginate(10);
+        $tasks = ProductionTask::with('order', 'materials.material')->paginate(10);
+        \Log::info('Loaded tasks:', $tasks->toArray()); // Логирование загруженных задач
         return view('production.index', compact('tasks'));
     }
 
@@ -34,45 +28,51 @@ class ProductionController extends Controller
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'materials' => 'required|array',
-            'materials.*.id' => 'required|exists:products,id',
-            'materials.*.quantity_required' => 'required|integer|min:1',
-            'workers' => 'required|array',
-            'workers.*' => 'exists:users,id',
-        ]);
-
         try {
-            $this->productionService->createTask($validatedData);
+            // Логирование входных данных
+            \Log::info('Store request data:', $request->all());
+    
+            // Валидация данных
+            $validatedData = $request->validate([
+                'order_id' => 'required|exists:orders,id',
+                'materials' => 'array',
+                'materials.*.id' => 'nullable|exists:products,id',
+                'materials.*.quantity_required' => 'nullable|integer|min:1',
+            ]);
+    
+            // Фильтрация материалов: исключаем пустые или незаполненные поля
+            $filteredMaterials = array_filter($validatedData['materials'], function ($material) {
+                return !empty($material['id']) && !empty($material['quantity_required']);
+            });
+    
+            // Создание задачи с валидированными данными
+            $task = ProductionTask::createNewTask([
+                'order_id' => $validatedData['order_id'],
+                'materials' => $filteredMaterials,
+            ]);
+    
+            // Редирект с сообщением об успехе
             return redirect()->route('production.index')->with('success', 'Задание успешно создано.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Ошибка при создании задания. Попробуйте снова.']);
+            // Логирование ошибок
+            \Log::error('Error creating task:', ['message' => $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
-
     public function updateStatus(Request $request, ProductionTask $task)
     {
-        $request->validate([
-            'status' => 'required|in:queued,in_progress,completed',
-        ]);
-
         try {
-            $this->productionService->updateTaskStatus($task, $request->status);
+            $task->updateTaskStatus($request->input('status'));
             return redirect()->route('production.index')->with('success', 'Статус задания обновлен.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Ошибка при обновлении статуса.']);
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
     public function qualityCheck(Request $request, ProductionTask $task)
     {
-        $request->validate([
-            'quality_notes' => 'nullable|string',
-        ]);
-
         try {
-            $this->productionService->performQualityCheck($task, $request->quality_notes);
+            $task->performQualityCheck($request->input('quality_notes'));
             return redirect()->route('production.index')->with('success', 'Качество проверено.');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
@@ -81,7 +81,7 @@ class ProductionController extends Controller
 
     public function reports()
     {
-        $tasks = ProductionTask::with('order', 'workers.worker')->get();
+        $tasks = ProductionTask::with('order')->get();
         return view('production.reports', compact('tasks'));
     }
 }

@@ -3,32 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Exception;
+use Illuminate\Support\Facades\Validator;
 
-/**
- * 
- *
- * @property int $id
- * @property int $order_id
- * @property string $status
- * @property string|null $notes
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskMaterial> $materials
- * @property-read int|null $materials_count
- * @property-read \App\Models\Order $order
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskWorker> $workers
- * @property-read int|null $workers_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionTask whereUpdatedAt($value)
- * @mixin \Eloquent
- */
+
 class ProductionTask extends Model
 {
     protected $fillable = [
@@ -45,13 +23,90 @@ class ProductionTask extends Model
 
     public function materials()
     {
-        return $this->hasMany(TaskMaterial::class);
+        return $this->hasMany(TaskMaterial::class , 'task_id');
     }
 
     public function workers()
     {
-        return $this->hasMany(TaskWorker::class);
+        return $this->hasMany(TaskWorker::class, 'task_id');
+    }
+
+    public static function validateTaskData(array $data)
+    {
+        \Log::info('Validation input data:', $data); // Логирование входных данных
+        $validator = Validator::make($data, [
+            'order_id' => 'required|exists:orders,id',
+            'materials' => 'required|array',
+            'materials.*.id' => 'required|exists:products,id',
+            'materials.*.quantity_required' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            throw new Exception($validator->errors()->first());
+        }
+    }
+
+    public static function validateStatusUpdate(string $status)
+    {
+        $allowedStatuses = ['queued', 'in_progress', 'completed'];
+
+        if (!in_array($status, $allowedStatuses)) {
+            throw new Exception('Недопустимый статус.');
+        }
     }
 
 
+    public function startTask()
+    {
+        if ($this->status !== 'pending') {
+            throw new Exception('Задача уже начата или завершена.');
+        }
+
+        $this->update(['status' => 'in_progress']);
+    }
+
+    public static function createNewTask(array $data)
+    {
+        self::validateTaskData($data);
+
+        $task = self::create([
+            'order_id' => $data['order_id'],
+            'status' => 'queued',
+        ]);
+
+        \Log::info('Created task:', $task->toArray()); // Логирование созданной задачи
+
+        // Привязка материалов к задаче
+        foreach ($data['materials'] as $material) {
+            $task->materials()->create([
+                'product_id' => $material['id'],
+                'quantity_required' => $material['quantity_required'],
+            ]);
+        }
+
+        \Log::info('Attached materials:', $data['materials']); // Логирование привязанных материалов
+
+        return $task;
+    }
+
+
+    public function updateTaskStatus(string $status)
+    {
+        self::validateStatusUpdate($status);
+
+        $this->update(['status' => $status]);
+
+        // Если задача завершена, выполняем дополнительные действия
+        if ($status === 'completed') {
+            $this->completeTask();
+        }
+    }
+    protected function completeTask()
+    {
+        // Уменьшаем количество материалов на складе
+        foreach ($this->materials as $material) {
+            $product = $material->product;
+            $product->decreaseQuantity($material->quantity_required);
+        }
+    }
 }

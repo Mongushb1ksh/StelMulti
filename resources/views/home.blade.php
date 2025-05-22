@@ -12,25 +12,46 @@
 @endsection
 
 @section('main_content')
-
-
-        <div class="dashboard-card">
-            <h2>Обзор продаж</h2>
-            <p>За последний месяц: 500 заказов на сумму 2 500 000 ₽</p>
-            <div class="chart"></div>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>Статус производства</h2>
-            <p>В работе: 20 заказов, Завершено: 30 заказов</p>
-            <div class="chart"></div>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>Финансовые показатели</h2>
-            <p>Доход: 3 000 000 ₽, Расходы: 1 800 000 ₽</p>
-            <div class="chart"></div>
-        </div>
+    <h2>Текущие задачи</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Заказ</th>
+                <th>Статус</th>
+                <th>Материалы</th>
+                <th>Сотрудники</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($tasks as $task)
+                <tr>
+                    <td>{{ $task->id }}</td>
+                    <td>{{ $task->order->id }}</td>
+                    <td>{{ $task->status }}</td>
+                    <td>
+                        <ul>
+                            @foreach($task->materials as $material)
+                                <li>{{ $material->material->name }} ({{ $material->quantity_required }})</li>
+                            @endforeach
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            @foreach($task->workers as $worker)
+                                <li>{{ $worker->worker->name }}</li>
+                            @endforeach
+                        </ul>
+                    </td>
+                    <td>
+                        <a href="{{ route('production.index', $task) }}" class="btn  btn-warning">Просмотр</a>
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
 
 
    
