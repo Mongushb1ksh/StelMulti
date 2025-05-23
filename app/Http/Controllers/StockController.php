@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Material;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -9,58 +10,53 @@ class StockController extends Controller
 {
     public function index()
     {
-        $products = Product::paginate(10);
+        $products = Product::with('category')
+            ->orderBy('quantity')
+            ->paginate(10);
+            
         return view('stock.index', compact('products'));
     }
 
-    public function receipt(Request $request, Product $product)
+    public function materials()
     {
-        $validatedData = $request->validate([
-            'quantity' => 'required|integer|min:1',
-            'notes' => 'nullable|string', // Допускаем отсутствие поля notes
-        ]);
-
-        try {
-            // Если notes не передано, используем null
-            $notes = $validatedData['notes'] ?? null;
-            $product->recordReceipt($validatedData['quantity'], $notes);
-            return redirect()->route('stock.index')->with('success', 'Приход успешно зафиксирован.');
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
-        }
+        $materials = Material::orderBy('quantity')
+            ->paginate(10);
+            
+        return view('stock.materials', compact('materials'));
     }
 
-    public function consumption(Request $request, Product $product)
+    public function addMaterial(Request $request)
     {
-        $validatedData = $request->validate([
-            'quantity' => 'required|integer|min:1',
-            'notes' => 'nullable|string', // Допускаем отсутствие поля notes
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'quantity' => 'required|integer|min:0',
+            'unit_price' => 'required|numeric|min:0',
         ]);
 
-        try {
-            // Если notes не передано, используем null
-            $notes = $validatedData['notes'] ?? null;
-            $product->recordConsumption($validatedData['quantity'], $notes);
-            return redirect()->route('stock.index')->with('success', 'Расход успешно зафиксирован.');
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
-        }
+        Material::create($validated);
+        
+        return redirect()->route('stock.materials')
+            ->with('success', 'Материал добавлен');
     }
 
-    public function transfer(Request $request, Product $product)
+    public function adjustStock(Request $request, Material $material)
     {
-        $validatedData = $request->validate([
+        $validated = $request->validate([
+            'action' => 'required|in:add,remove',
             'quantity' => 'required|integer|min:1',
-            'to_product_id' => 'required|exists:products,id',
+            'notes' => 'nullable|string',
         ]);
 
-        try {
-            $toProduct = Product::findOrFail($validatedData['to_product_id']);
-            // Перемещение не требует notes, поэтому передаем null
-            $product->recordTransfer($toProduct, $validatedData['quantity']);
-            return redirect()->route('stock.index')->with('success', 'Перемещение успешно зафиксировано.');
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+        if ($validated['action'] === 'add') {
+            $material->increment('quantity', $validated['quantity']);
+        } else {
+            $material->decrement('quantity', $validated['quantity']);
         }
+        
+        // Логирование операции...
+        
+        return redirect()->route('stock.materials')
+            ->with('success', 'Количество материала обновлено');
     }
 }

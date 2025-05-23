@@ -2,111 +2,115 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Exception;
-use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class ProductionTask extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'order_id',
         'status',
-        'notes',
+        'start_date',
+        'end_date',
+        'quality_check',
     ];
 
-
-    public function order(){
-        return $this->belongsTo((Order::class));
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 
-
-    public function materials()
+    public static function getAll(Request $request): JsonResponse
     {
-        return $this->hasMany(TaskMaterial::class , 'task_id');
+        $tasks = self::with('order')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'tasks' => $tasks
+        ]);
     }
 
-    public function workers()
+    public static function getById(Request $request, $id): JsonResponse
     {
-        return $this->hasMany(TaskWorker::class, 'task_id');
+        $task = self::with('order')->find($id);
+
+        if (!$task) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Production task not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'task' => $task
+        ]);
     }
 
-    public static function validateTaskData(array $data)
+    public static function createTask(Request $request): JsonResponse
     {
-        \Log::info('Validation input data:', $data); // Логирование входных данных
-        $validator = Validator::make($data, [
+        $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'materials' => 'required|array',
-            'materials.*.id' => 'required|exists:products,id',
-            'materials.*.quantity_required' => 'required|integer|min:1',
+            'status' => 'required|string|in:queued,in_progress,completed',
+            'start_date' => 'required|date',
+            'quality_check' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            throw new Exception($validator->errors()->first());
-        }
+        $task = self::create($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Production task created successfully',
+            'task' => $task
+        ], 201);
     }
 
-    public static function validateStatusUpdate(string $status)
+    public static function updateTask(Request $request, $id): JsonResponse
     {
-        $allowedStatuses = ['queued', 'in_progress', 'completed'];
+        $task = self::find($id);
 
-        if (!in_array($status, $allowedStatuses)) {
-            throw new Exception('Недопустимый статус.');
-        }
-    }
-
-
-    public function startTask()
-    {
-        if ($this->status !== 'pending') {
-            throw new Exception('Задача уже начата или завершена.');
+        if (!$task) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Production task not found'
+            ], 404);
         }
 
-        $this->update(['status' => 'in_progress']);
-    }
-
-    public static function createNewTask(array $data)
-    {
-        self::validateTaskData($data);
-
-        $task = self::create([
-            'order_id' => $data['order_id'],
-            'status' => 'queued',
+        $validated = $request->validate([
+            'status' => 'sometimes|string|in:queued,in_progress,completed',
+            'end_date' => 'nullable|date',
+            'quality_check' => 'nullable|string',
         ]);
 
-        \Log::info('Created task:', $task->toArray()); // Логирование созданной задачи
+        $task->update($validated);
 
-        // Привязка материалов к задаче
-        foreach ($data['materials'] as $material) {
-            $task->materials()->create([
-                'product_id' => $material['id'],
-                'quantity_required' => $material['quantity_required'],
-            ]);
-        }
-
-        \Log::info('Attached materials:', $data['materials']); // Логирование привязанных материалов
-
-        return $task;
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Production task updated successfully',
+            'task' => $task
+        ]);
     }
 
-
-    public function updateTaskStatus(string $status)
+    public static function deleteTask(Request $request, $id): JsonResponse
     {
-        self::validateStatusUpdate($status);
+        $task = self::find($id);
 
-        $this->update(['status' => $status]);
+        if (!$task) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Production task not found'
+            ], 404);
+        }
 
-        // Если задача завершена, выполняем дополнительные действия
-        if ($status === 'completed') {
-            $this->completeTask();
-        }
-    }
-    protected function completeTask()
-    {
-        // Уменьшаем количество материалов на складе
-        foreach ($this->materials as $material) {
-            $product = $material->product;
-            $product->decreaseQuantity($material->quantity_required);
-        }
+        $task->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Production task deleted successfully'
+        ]);
     }
 }

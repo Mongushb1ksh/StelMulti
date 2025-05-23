@@ -1,4 +1,6 @@
-@extends('layout')
+@extends('layouts.app')
+
+@section('title', 'Вход в систему')
 
 @section('main_content')
 
@@ -26,7 +28,7 @@
         </div>
     @endif
 
-    <form method="POST" action="/login/show">
+    <form method="POST" action="{{ route('login') }}">
         @csrf
         <input type="email" name="email" placeholder="Email" required>
         <input type="password" name="password" placeholder="Пароль" required>

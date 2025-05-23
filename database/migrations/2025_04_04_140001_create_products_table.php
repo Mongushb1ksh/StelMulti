@@ -8,20 +8,19 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->foreignId('role_id')->constrained();
-            $table->boolean('is_blocked')->default(false);
-            $table->rememberToken();
+            $table->text('description')->nullable();
+            $table->integer('quantity');
+            $table->foreignId('category_id')->constrained();
+            $table->decimal('unit_price', 10, 2);
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('products');
     }
 };

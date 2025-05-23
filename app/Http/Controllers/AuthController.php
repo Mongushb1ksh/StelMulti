@@ -1,44 +1,65 @@
 <?php
 
 namespace App\Http\Controllers;
- 
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    public function register(): RedirectResponse
+    public function showLoginForm()
     {
-        try {
-            User::registerUser(request()->all());
-            return redirect('/login')->with('info', 'Регистрация завершена. Ожидайте подтверждения.');
-        } catch (\Exception $e) {
-            Log::error('Registration error: '.$e->getMessage());
-            return back()->withErrors(['error' => $e->getMessage()]);
-        }
+        return view('auth.login');
     }
 
-    public function login(): RedirectResponse
+    public function login(Request $request)
     {
-        try {
-            User::attemptLogin(request()->all());
-            return redirect('/home')->with('success', 'Вы успешно вошли!');
-        } catch (\Exception $e) {
-            Log::error('Login error: '.$e->getMessage());
-            return back()->withErrors(['error' => $e->getMessage()]);
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->intended('/');
         }
+
+        return back()->withErrors([
+            'email' => 'Неверные учетные данные',
+        ]);
     }
 
-    public function logout(): RedirectResponse
+    public function showRegistrationForm()
     {
-        try {
-            User::logoutUser();
-            request()->session()->invalidate();
-            request()->session()->regenerateToken();
-            return redirect('/login')->with('success', 'Вы вышли из системы');
-        } catch (\Exception $e) {
-            return redirect('/')->withErrors(['error' => 'Ошибка при выходе']);
-        }
+        return view('auth.register');
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'role_id' => 4, // Базовая роль
+        ]);
+
+        Auth::login($user);
+
+        return redirect('/')->with('success', 'Регистрация прошла успешно!');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/');
     }
 }

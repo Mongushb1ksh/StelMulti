@@ -6,23 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
-            $table->string('status')->default('new');
-            $table->decimal('total_price', 10, 2)->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamp('completed_at')->nullable();
+            $table->string('client_name');
+            $table->string('client_email');
+            $table->foreignId('product_id')->constrained();
+            $table->integer('quantity');
+            $table->string('status');
+            $table->foreignId('manager_id')->constrained('users');
             $table->timestamps();
         });
     }
 
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('orders');
     }

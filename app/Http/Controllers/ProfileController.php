@@ -2,55 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ProfileService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
-    protected $profileService;
-
-    public function __construct(ProfileService $profileService)
+    public function show()
     {
-        $this->profileService = $profileService;
-    }
-
-    public function index()
-    {
-        $user = Auth::user();
-        return view('profile.index', compact('user'));
+        return view('profile.show');
     }
 
     public function update(Request $request)
     {
-        $validatedData = $request->validate([
+        $user = $request->user();
+        
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . Auth::id(),
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
+            'current_password' => ['nullable', 'required_with:password', 'current_password'],
+            'password' => ['nullable', 'confirmed', Password::defaults()],
         ]);
 
-        try {
-            $this->profileService->updateProfile($validatedData);
-            return redirect()->route('profile.index')->with('success', 'Данные успешно обновлены.');
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Ошибка при обновлении данных.']);
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        
+        if ($validated['password']) {
+            $user->password = Hash::make($validated['password']);
         }
-    }
 
-    public function changePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|string|min:6|confirmed',
-        ]);
+        $user->save();
 
-        try {
-            $this->profileService->changePassword(
-                $request->current_password,
-                $request->new_password
-            );
-            return redirect()->route('profile.index')->with('success', 'Пароль успешно изменен.');
-        } catch (\Exception $e) {
-            return back()->withErrors(['current_password' => $e->getMessage()]);
-        }
+        return redirect()->route('profile.show')->with('success', 'Профиль обновлен');
     }
 }

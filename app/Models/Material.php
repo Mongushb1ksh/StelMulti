@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class Product extends Model
+class Material extends Model
 {
     use HasFactory;
 
@@ -15,74 +15,62 @@ class Product extends Model
         'name',
         'description',
         'quantity',
-        'category_id',
         'unit_price',
     ];
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function orders()
-    {
-        return $this->hasMany(Order::class);
-    }
-
     public static function getAll(Request $request): JsonResponse
     {
-        $products = self::with('category')->get();
+        $materials = self::all();
 
         return response()->json([
             'status' => 'success',
-            'products' => $products
+            'materials' => $materials
         ]);
     }
 
     public static function getById(Request $request, $id): JsonResponse
     {
-        $product = self::with('category')->find($id);
+        $material = self::find($id);
 
-        if (!$product) {
+        if (!$material) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Product not found'
+                'message' => 'Material not found'
             ], 404);
         }
 
         return response()->json([
             'status' => 'success',
-            'product' => $product
+            'material' => $material
         ]);
     }
 
-    public static function createProduct(Request $request): JsonResponse
+    public static function createMaterial(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
             'unit_price' => 'required|numeric|min:0',
         ]);
 
-        $product = self::create($validated);
+        $material = self::create($validated);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Product created successfully',
-            'product' => $product
+            'message' => 'Material created successfully',
+            'material' => $material
         ], 201);
     }
 
-    public static function updateProduct(Request $request, $id): JsonResponse
+    public static function updateMaterial(Request $request, $id): JsonResponse
     {
-        $product = self::find($id);
+        $material = self::find($id);
 
-        if (!$product) {
+        if (!$material) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Product not found'
+                'message' => 'Material not found'
             ], 404);
         }
 
@@ -90,35 +78,34 @@ class Product extends Model
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'quantity' => 'sometimes|integer|min:0',
-            'category_id' => 'sometimes|exists:categories,id',
             'unit_price' => 'sometimes|numeric|min:0',
         ]);
 
-        $product->update($validated);
+        $material->update($validated);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Product updated successfully',
-            'product' => $product
+            'message' => 'Material updated successfully',
+            'material' => $material
         ]);
     }
 
-    public static function deleteProduct(Request $request, $id): JsonResponse
+    public static function deleteMaterial(Request $request, $id): JsonResponse
     {
-        $product = self::find($id);
+        $material = self::find($id);
 
-        if (!$product) {
+        if (!$material) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Product not found'
+                'message' => 'Material not found'
             ], 404);
         }
 
-        $product->delete();
+        $material->delete();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Product deleted successfully'
+            'message' => 'Material deleted successfully'
         ]);
     }
 }

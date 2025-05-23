@@ -1,75 +1,74 @@
-@extends('layout')
+@extends('layouts.app')
+
+@section('title', 'Управление заказами')
 
 @section('main_content')
-<div class="admin-container">
-    <h2>Список заказов</h2>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Управление заказами</h1>
+        <a href="{{ route('orders.create') }}" class="btn btn-primary">
+            Создать заказ
+        </a>
+    </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(auth()->user()->role->name === 'Admin')
-    <form method="GET" class="filters">
-        <label for="status">Статус:</label>
-        <select name="status" id="status">
-            <option value="">Все</option>
-            <option value="new">Новый</option>
-            <option value="processing">В обработке</option>
-            <option value="production">В производстве</option>
-            <option value="completed">Готово</option>
-            <option value="shipped">Отгружено</option>
-        </select>
-
-        <label for="client">Клиент:</label>
-        <select name="client" id="client">
-            <option value="">Все</option>
-            @foreach($users as $user)
-                <option value="{{ $user->id }}">{{ $user->name }}</option>
-            @endforeach
-        </select>
-
-        <button type="submit" class=" btn-primary">Применить фильтры</button>
-        <a type="button" class="btn btn-primary" href="/orders/create">Добавить заказ</a>
-    </form>
-    @endif
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Клиент</th>
-                <th>Статус</th>
-                <th>Общая стоимость</th>
-                <th>Дата создания</th>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Клиент</th>
+                            <th>Товар</th>
+                            <th>Кол-во</th>
+                            <th>Менеджер</th>
+                            <th>Статус</th>
+                            <th>Дата</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($orders as $order)
+                        <tr>
+                            <td>{{ $order->id }}</td>
+                            <td>{{ $order->client_name }}</td>
+                            <td>{{ $order->product->name }}</td>
+                            <td>{{ $order->quantity }}</td>
+                            <td>{{ $order->manager->name }}</td>
+                            <td>
+                                <span class="badge bg-{{ [
+                                    'new' => 'info',
+                                    'processing' => 'warning',
+                                    'completed' => 'success',
+                                    'cancelled' => 'danger'
+                                ][$order->status] }}">
+                                    {{ __('orders.status.' . $order->status) }}
+                                </span>
+                            </td>
+                            <td>{{ $order->created_at->format('d.m.Y H:i') }}</td>
+                            <td>
+                                <a href="{{ route('orders.show', $order) }}" 
+                                   class="btn btn-sm btn-info">Просмотр</a>
+                                <a href="{{ route('orders.edit', $order) }}" 
+                                   class="btn btn-sm btn-primary">Редактировать</a>
+                                <form action="{{ route('orders.destroy', $order) }}" 
+                                      method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Удалить этот заказ?')">
+                                        Удалить
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
             
-                <th>
-                @if(auth()->user()->role->name === 'Admin')
-                    Действия
-                @endif   
-                </th>
-                 
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($orders as $order)
-                <tr>
-                    <td>{{ $order->id }}</td>
-                    <td>{{ $order->user->name }}</td>
-                    <td>{{ $order->status }}</td>
-                    <td>{{ $order->total_price ?? 'N/A' }}</td>
-                    <td>{{ $order->created_at->format('d.m.Y') }}</td>
-                    <td>
-                        @if(auth()->user()->role->name !== 'Client')
-                        <a href="{{ route('orders.show', $order) }}" class="btn btn-primary">Просмотр</a>
-                        @endif
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    {{ $orders->links() }}
+            {{ $orders->links() }}
+        </div>
+    </div>
 </div>
 @endsection

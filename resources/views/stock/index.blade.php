@@ -1,74 +1,67 @@
-@extends('layout')
+@extends('layouts.app')
+
+@section('title', 'Управление складом')
 
 @section('main_content')
-<div class="stock-container">
-    <h2>Управление складом</h2>
+<div class="container">
+    <h1 class="mb-4">Управление складом</h1>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ route('stock.index') }}">Товары</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('stock.materials') }}">Материалы</a>
+        </li>
+    </ul>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Товары на складе</span>
+            <a href="{{ route('products.create') }}" class="btn btn-sm btn-primary">
+                Добавить товар
+            </a>
         </div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Количество</th>
+                            <th>Цена</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($products as $product)
+                        <tr>
+                            <td>{{ $product->id }}</td>
+                            <td>{{ $product->name }}</td>
+                            <td>{{ $product->category->name }}</td>
+                            <td class="{{ $product->quantity < 10 ? 'text-danger fw-bold' : '' }}">
+                                {{ $product->quantity }} шт.
+                            </td>
+                            <td>{{ number_format($product->unit_price, 2) }} ₽</td>
+                            <td>
+                                @if($product->quantity < 5)
+                                <span class="badge bg-danger">Критический уровень</span>
+                                @elseif($product->quantity < 10)
+                                <span class="badge bg-warning">Низкий уровень</span>
+                                @else
+                                <span class="badge bg-success">В наличии</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            
+            {{ $products->links() }}
         </div>
-    @endif
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Описание</th>
-                <th>Цена</th>
-                <th>Количество</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($products as $product)
-                <tr>
-                    <td>{{ $product->id }}</td>
-                    <td>{{ $product->name }}</td>
-                    <td>{{ $product->description }}</td>
-                    <td>{{ $product->price }} руб.</td>
-                    <td>{{ $product->quantity }}</td>
-                    <td>
-                        <form action="{{ route('stock.receipt', $product) }}" method="POST" style="display:inline;">
-                            @csrf
-                            <input type="number" name="quantity" placeholder="Количество" min="1" required>
-                            <button type="submit" class="btn btn-primary">Приход</button>
-                        </form>
-
-                        <form action="{{ route('stock.consumption', $product) }}" method="POST" style="display:inline;">
-                            @csrf
-                            <input type="number" name="quantity" placeholder="Количество" min="1" required>
-                            <button type="submit" class="btn btn-primary">Расход</button>
-                        </form>
-
-                        <form action="{{ route('stock.transfer', $product) }}" method="POST" style="display:inline;">
-                            @csrf
-                            <input type="number" name="quantity" placeholder="Количество" min="1" required>
-                            <select  name="to_product_id" required>
-                                <option value="">Выберите товар</option>
-                                @foreach($products as $otherProduct)
-                                    @if($otherProduct->id !== $product->id)
-                                        <option value="{{ $otherProduct->id }}">{{ $otherProduct->name }}</option>
-                                    @endif
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn btn-primary">Перемещение</button>
-                        </form>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+    </div>
 </div>
 @endsection

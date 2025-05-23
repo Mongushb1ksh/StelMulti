@@ -1,4 +1,4 @@
-@extends('layout')
+@extends('layouts.app')
 
 @section('main_content')
 <div class="order-container">

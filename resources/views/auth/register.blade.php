@@ -1,4 +1,6 @@
-@extends('layout')
+@extends('layouts.app')
+
+@section('title', 'Регистрация')
 
 @section('main_content')
 <div id="register" class="form-container">
@@ -20,7 +22,7 @@
         </div>
     @endif
 
-    <form action="/register/show" method="POST">
+    <form  action="{{ route('register') }}" method="POST">
         @csrf
         <input type="text"  name="name"placeholder="Имя" required>
         <input type="email" name="email" placeholder="Email" required>

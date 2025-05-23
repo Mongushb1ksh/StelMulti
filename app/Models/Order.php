@@ -2,80 +2,131 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Request;
-use App\Models\User;
-
-
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class Order extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'user_id',
+        'client_name',
+        'client_email',
+        'product_id',
+        'quantity',
         'status',
-        'total_price',
-        'notes',
+        'manager_id',
     ];
 
-    public function user()
+    public function product()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Product::class);
     }
 
-    public function items()
+    public function manager()
     {
-        return $this->hasMany(OrderItem::class);
-    }
-    public static function validateOrderData(array $data): array
-    {
-        return Validator::make($data, [
-            'user_id' => 'nullable|exists:users,id',
-            'items' => 'required|array',
-            'items.*.product_name' => 'required|string',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
-            'status' => ['sometimes', Rule::in(['new', 'processing', 'production', 'completed', 'shipped'])],
-        ])->validate();
+        return $this->belongsTo(User::class, 'manager_id');
     }
 
-    public function scopeFilter(Builder $query, array $filters): Builder
+    public function productionTask()
     {
-        return $query
-            ->when(isset($filters['status']), fn($q) => $q->where('status', $filters['status']))
-            ->when(isset($filters['user_id']), fn($q) => $q->where('user_id', $filters['user_id']));
+        return $this->hasOne(ProductionTask::class);
     }
 
-    public static function getClientOrders()
+    public static function getAll(Request $request): JsonResponse
     {
-        return self::where('user_id', Auth::id())->paginate(10);
+        $orders = self::with(['product', 'manager', 'productionTask'])->get();
+
+        return response()->json([
+            'status' => 'success',
+            'orders' => $orders
+        ]);
     }
 
-    public static function createOrder(array $data): self
+    public static function getById(Request $request, $id): JsonResponse
     {
-        $validated = self::validateOrderData($data);
+        $order = self::with(['product', 'manager', 'productionTask'])->find($id);
 
-        $order = self::create([
-            'user_id' => $validated['user_id'] ?? Auth::id(),
-            'status' => 'new',
-            'total_price' => self::calculateTotal($validated['items'])
+        if (!$order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'order' => $order
+        ]);
+    }
+
+    public static function createOrder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'status' => 'required|string|in:pending,processing,completed,cancelled',
         ]);
 
-        $order->items()->createMany($validated['items']);
+        $validated['manager_id'] = $request->user()->id;
 
-        return $order;
+        $order = self::create($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Order created successfully',
+            'order' => $order
+        ], 201);
     }
 
-    public function updateStatus(string $status): void
+    public static function updateOrder(Request $request, $id): JsonResponse
     {
-        $this->update(['status' => $status]);
+        $order = self::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'client_name' => 'sometimes|string|max:255',
+            'client_email' => 'sometimes|email|max:255',
+            'product_id' => 'sometimes|exists:products,id',
+            'quantity' => 'sometimes|integer|min:1',
+            'status' => 'sometimes|string|in:pending,processing,completed,cancelled',
+        ]);
+
+        $order->update($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Order updated successfully',
+            'order' => $order
+        ]);
     }
 
-    protected static function calculateTotal(array $items): float
+    public static function deleteOrder(Request $request, $id): JsonResponse
     {
-        return array_reduce($items, fn($sum, $item) => $sum + ($item['quantity'] * $item['price']), 0);
+        $order = self::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        $order->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Order deleted successfully'
+        ]);
     }
 }

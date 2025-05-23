@@ -1,76 +1,62 @@
 <?php
 
-use App\Http\Controllers\MainController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\StockController;
-use App\Http\Controllers\ProductionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\{
+    AuthController,
+    HomeController,
+    ProductController,
+    OrderController,
+    ProductionController,
+    StockController,
+    AdminController,
+    ProfileController
+};
 
+// Главная
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/', [MainController::class, 'layout']);
-Route::get('/home', [MainController::class, 'home'])->middleware('auth');
-
-
-Route::get('/register', function () {
-    return view('auth.register');
+// Аутентификация
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
 });
-
-Route::get('/login', function () {
-    return view('auth.login');
-});
-Route::post('/login/show', [AuthController::class, 'login']);
-Route::post('/register/show', [AuthController::class, 'register']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
-
-
-Route::middleware('auth')->group(function() {
-    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-    Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/change-password', [ProfileController::class, 'changePassword'])->name('profile.change-password');
-});
-
-Route::middleware('auth')->group(function() {
-    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
-    Route::post('/admin/users/{user}/approved', [UserController::class, 'approved'])->name('admin.users.approved');
-    Route::put('/admin/users/{user}/edit', [UserController::class, 'update'])->name('admin.users.update');
-    Route::get('/admin/users/{user}', [UserController::class, 'edit'])->name('admin.users.edit');
-});
-
-
-Route::middleware('auth')->prefix('orders')->group(function () {
-    Route::get('/', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/create', [OrderController::class, 'create'])->name('orders.create');
-    Route::post('/', [OrderController::class, 'store'])->name('orders.store');
-    Route::put('/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
-    Route::get('/{order}', [OrderController::class, 'show'])->name('orders.show');
-});
-
 
 Route::middleware('auth')->group(function () {
-    Route::get('/catalog', [ProductController::class, 'index'])->name('catalog.index');
-    Route::get('/catalog/{product}', [ProductController::class, 'show'])->name('catalog.show');
-});
-
-
-Route::middleware('auth')->prefix('stock')->group(function () {
-    Route::get('/', [StockController::class, 'index'])->name('stock.index');
-    Route::post('/{product}/receipt', [StockController::class, 'receipt'])->name('stock.receipt');
-    Route::post('/{product}/consumption', [StockController::class, 'consumption'])->name('stock.consumption');
-    Route::post('/{product}/transfer', [StockController::class, 'transfer'])->name('stock.transfer');
-});
-
-
-Route::middleware('auth')->prefix('production')->group(function (){
-    Route::get('/', [ProductionController::class, 'index'])->name('production.index');
-    Route::get('/create', [ProductionController::class, 'create'])->name('production.create');
-    Route::post('/', [ProductionController::class, 'store'])->name('production.store');    
-    Route::post('/{task}/status', [ProductionController::class, 'updateStatus'])->name('production.update-status');    
-    Route::post('/{task}/quality-check', [ProductionController::class, 'quaityCheck'])->name('production.quality-check');    
-    Route::post('/reports', [ProductionController::class, 'reports'])->name('production.reports');    
-
-
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    
+    // Профиль
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    
+    // Продукция
+    Route::resource('products', ProductController::class);
+    
+    // Заказы
+    Route::resource('orders', OrderController::class);
+    
+    // Производство
+    Route::resource('production', ProductionController::class);
+    Route::post('/production/{task}/complete', [ProductionController::class, 'complete'])
+         ->name('production.complete');
+    
+    // Склад
+    Route::prefix('stock')->group(function () {
+        Route::get('/', [StockController::class, 'index'])->name('stock.index');
+        Route::get('/materials', [StockController::class, 'materials'])->name('stock.materials');
+        Route::post('/materials/add', [StockController::class, 'addMaterial'])->name('stock.materials.add');
+        Route::post('/materials/{material}/adjust', [StockController::class, 'adjustStock'])->name('stock.materials.adjust');
+    });
+    
+    // Админка
+    Route::middleware('can:admin')->prefix('admin')->group(function () {
+        Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::resource('users', AdminController::class)->except(['show']);
+        Route::post('/users/{user}/block', [AdminController::class, 'block'])->name('admin.users.block');
+        Route::post('/users/{user}/unblock', [AdminController::class, 'unblock'])->name('admin.users.unblock');
+        
+        // Категории
+        Route::resource('categories', CategoryController::class)->except(['show']);
+    });
 });

@@ -3,55 +3,83 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $orders = Auth::user()->role->name === 'Client'
-            ? Order::getClientOrders()
-            : Order::with('user', 'items')
-                ->filter($request->only(['status', 'user_id']))
-                ->paginate(10);
-
-        return view('orders.index', [
-            'orders' => $orders,
-            'users' => User::all()
-        ]);
+        $orders = Order::with(['product', 'manager'])
+            ->latest()
+            ->paginate(10);
+            
+        return view('orders.index', compact('orders'));
     }
 
     public function create()
     {
-        return view('orders.create', [
-            'users' => Auth::user()->role->name === 'Admin' ? User::all() : null
-        ]);
+        $products = Product::all();
+        $managers = User::where('role_id', 4)->get(); // Менеджеры по продажам
+        
+        return view('orders.create', compact('products', 'managers'));
     }
 
     public function store(Request $request)
     {
-        try {
-            Order::createOrder($request->all());
-            return redirect()->route('orders.index')->with('success', 'Заказ успешно создан.');
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Ошибка при создании заказа: ' . $e->getMessage()]);
-        }
-    }
+        $validated = $request->validate([
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'manager_id' => 'required|exists:users,id',
+        ]);
 
-    public function updateStatus(Request $request, Order $order)
-    {
-        try {
-            $order->updateStatus($request->status);
-            return redirect()->route('orders.index')->with('success', 'Статус заказа обновлен.');
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Ошибка обновления статуса']);
-        }
+        $validated['status'] = 'new';
+        
+        Order::create($validated);
+        
+        return redirect()->route('orders.index')
+            ->with('success', 'Заказ успешно создан');
     }
 
     public function show(Order $order)
     {
-        return view('orders.show', ['order' => $order->load('user', 'items')]);
+        return view('orders.show', compact('order'));
+    }
+
+    public function edit(Order $order)
+    {
+        $products = Product::all();
+        $managers = User::where('role_id', 4)->get();
+        $statuses = ['new', 'processing', 'completed', 'cancelled'];
+        
+        return view('orders.edit', compact('order', 'products', 'managers', 'statuses'));
+    }
+
+    public function update(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'manager_id' => 'required|exists:users,id',
+            'status' => 'required|in:new,processing,completed,cancelled',
+        ]);
+
+        $order->update($validated);
+        
+        return redirect()->route('orders.index')
+            ->with('success', 'Заказ успешно обновлен');
+    }
+
+    public function destroy(Order $order)
+    {
+        $order->delete();
+        
+        return redirect()->route('orders.index')
+            ->with('success', 'Заказ успешно удален');
     }
 }
