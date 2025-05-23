@@ -17,7 +17,7 @@
     <div class="products-grid">
         @foreach($products as $product)
             <div class="product-card">
-                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
+            <img src="{{ asset('images/' . $product->image) }}" alt="{{ $product->name }}">
                 <div>
                     <h3>{{ $product->name }}</h3>
                     <p>{{ $product->description }}</p>
@@ -32,7 +32,7 @@
     <div class="products-grid">
         @foreach($products as $product)
             <div class="product-card">
-                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
+            <img src="{{ asset('images/' . $product->image) }}" alt="{{ $product->name }}">
                  <div>
                     <h3>{{ $product->name }}</h3>
                     <p>{{ $product->description }}</p>
@@ -46,7 +46,7 @@
     <div class="products-grid">
         @foreach($products as $product)
             <div class="product-card">
-                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
+                <img src="{{ asset('images/' . $product->image) }}" alt="{{ $product->name }}">
                 <div>
                     <h3>{{ $product->name }}</h3>
                     <p>{{ $product->description }}</p>
