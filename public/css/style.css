@@ -87,6 +87,14 @@ header .user-info {
     font-weight: bold;
 }
 
+.sidebar ul li a.active,
+.sidebar ul li a.active:hover {
+    background-color: #16a085;
+    font-weight: bold;
+    color: #fff;
+    transform: translateX(0);
+}
+
 /* Основной контент */
 .main-content {
     margin-left: 270px; /* Отступ для бокового меню */
@@ -516,4 +524,115 @@ form .error {
 .product-details button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
+}
+
+
+.btn-primary{
+    margin: 1% 0;
+    text-decoration: none;
+}
+
+select[name="status"] {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    margin-bottom: 1%;
+    transition: all 0.3s ease;
+    width: 150px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* При наведении */
+select[name="status"]:hover {
+    border-color: #888;
+    background-color: #f9f9f9;
+}
+
+/* При фокусе */
+select[name="status"]:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 0 2px rgba(27, 188, 155, 0.2);
+}
+
+/* Цвет текста в зависимости от выбранного статуса */
+select[name="status"] option[value="queued"] {
+    color: #2c3e50;
+    background-color: #ecf0f1;
+}
+
+select[name="status"] option[value="in_progress"] {
+    color: #f39c12;
+    background-color: #fff9e6;
+}
+
+select[name="status"] option[value="completed"] {
+    color: #27ae60;
+    background-color: #f1faee;
+}
+
+select[name="to_product_id"] {
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+    font-size: 14px;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 300px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* При наведении */
+select[name="to_product_id"]:hover {
+    border-color: #888;
+    background-color: #f9f9f9;
+}
+
+/* При фокусе */
+select[name="to_product_id"]:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 0 2px rgba(27, 188, 155, 0.2);
+    z-index: 10;
+}
+
+#client {
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+    font-size: 14px;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 300px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* При наведении */
+#client:hover {
+    border-color: #888;
+    background-color: #f9f9f9;
+}
+
+/* При фокусе */
+#client:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 0 2px rgba(27, 188, 155, 0.2);
+    z-index: 10;
+}
+
+/* Стиль отдельных опций — можно улучшить через библиотеку, если нужно */
+#client option {
+    background-color: white;
+    color: #2c3e50;
 }

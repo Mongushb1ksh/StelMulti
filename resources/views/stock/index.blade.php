@@ -43,19 +43,19 @@
                         <form action="{{ route('stock.receipt', $product) }}" method="POST" style="display:inline;">
                             @csrf
                             <input type="number" name="quantity" placeholder="Количество" min="1" required>
-                            <button type="submit" class="btn btn-success">Приход</button>
+                            <button type="submit" class="btn btn-primary">Приход</button>
                         </form>
 
                         <form action="{{ route('stock.consumption', $product) }}" method="POST" style="display:inline;">
                             @csrf
                             <input type="number" name="quantity" placeholder="Количество" min="1" required>
-                            <button type="submit" class="btn btn-danger">Расход</button>
+                            <button type="submit" class="btn btn-primary">Расход</button>
                         </form>
 
                         <form action="{{ route('stock.transfer', $product) }}" method="POST" style="display:inline;">
                             @csrf
                             <input type="number" name="quantity" placeholder="Количество" min="1" required>
-                            <select name="to_product_id" required>
+                            <select  name="to_product_id" required>
                                 <option value="">Выберите товар</option>
                                 @foreach($products as $otherProduct)
                                     @if($otherProduct->id !== $product->id)
@@ -63,7 +63,7 @@
                                     @endif
                                 @endforeach
                             </select>
-                            <button type="submit" class="btn btn-warning">Перемещение</button>
+                            <button type="submit" class="btn btn-primary">Перемещение</button>
                         </form>
                     </td>
                 </tr>

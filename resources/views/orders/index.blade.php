@@ -30,7 +30,7 @@
             @endforeach
         </select>
 
-        <button type="submit" class="btn btn-primary">Применить фильтры</button>
+        <button type="submit" class=" btn-primary">Применить фильтры</button>
         <a type="button" class="btn btn-primary" href="/orders/create">Добавить заказ</a>
     </form>
     @endif

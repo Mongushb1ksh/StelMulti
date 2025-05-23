@@ -57,7 +57,7 @@
                             <form action="{{ route('production.quality-check', $task) }}" method="POST" style="display:inline;">
                                 @csrf
                                 <input type="text" name="quality_notes" placeholder="Примечания к проверке">
-                                <button type="submit" class="btn btn-warning">Проверить качество</button>
+                                <button type="submit" class="btn btn-primary">Проверить качество</button>
                             </form>
                         @endif
                     </td>

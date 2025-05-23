@@ -45,7 +45,7 @@
                         </ul>
                     </td>
                     <td>
-                        <a href="{{ route('production.index', $task) }}" class="btn  btn-warning">Просмотр</a>
+                        <a href="{{ route('production.index', $task) }}" class="btn  btn-primary">Просмотр</a>
                     </td>
                 </tr>
             @endforeach
