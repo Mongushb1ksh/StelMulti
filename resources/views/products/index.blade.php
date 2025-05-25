@@ -34,7 +34,7 @@
                         <td>{{ number_format($product->unit_price, 2) }} ₽</td>
                         <td>
                             <a href="{{ route('products.show', $product) }}" 
-                               class="btn btn-sm btn-info">Просмотр</a>
+                               class="btn btn-sm btn-primary">Просмотр</a>
                             <a href="{{ route('products.edit', $product) }}" 
                                class="btn btn-sm btn-primary">Редактировать</a>
                             <form action="{{ route('products.destroy', $product) }}" 

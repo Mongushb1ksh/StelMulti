@@ -11,37 +11,27 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::with(['product', 'manager'])
-            ->latest()
-            ->paginate(10);
-            
+        $orders = Order::with(['product', 'manager'])->latest()->paginate(10);
         return view('orders.index', compact('orders'));
     }
 
     public function create()
     {
         $products = Product::all();
-        $managers = User::where('role_id', 4)->get(); // Менеджеры по продажам
-        
-        return view('orders.create', compact('products', 'managers'));
+        return view('orders.create', compact('products'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'client_name' => 'required|string|max:255',
-            'client_email' => 'required|email|max:255',
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'manager_id' => 'required|exists:users,id',
-        ]);
-
-        $validated['status'] = 'new';
-        
-        Order::create($validated);
-        
-        return redirect()->route('orders.index')
-            ->with('success', 'Заказ успешно создан');
+        try {
+            Order::createNewOrder($request->all());
+            return redirect()->route('orders.index')
+                ->with('success', 'Заказ успешно создан');
+        } catch (\Exception $e){
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error'=> $e->getMessage()]);
+        }
     }
 
     public function show(Order $order)
@@ -51,35 +41,39 @@ class OrderController extends Controller
 
     public function edit(Order $order)
     {
+        if (!$order->canBeEdited()) {
+            return redirect()->back()->with('error', 'Завершенные или отмененные заказы нельзя редактировать');
+        }
         $products = Product::all();
-        $managers = User::where('role_id', 4)->get();
-        $statuses = ['new', 'processing', 'completed', 'cancelled'];
-        
-        return view('orders.edit', compact('order', 'products', 'managers', 'statuses'));
+        return view('orders.edit', compact('order', 'products'));
     }
 
     public function update(Request $request, Order $order)
     {
-        $validated = $request->validate([
-            'client_name' => 'required|string|max:255',
-            'client_email' => 'required|email|max:255',
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'manager_id' => 'required|exists:users,id',
-            'status' => 'required|in:new,processing,completed,cancelled',
-        ]);
+        try {
+            if (!$order->canBeEdited()) {
+                return redirect()->back()->with('error', 'Завершенные или отмененные заказы нельзя редактировать');
+            }
+            Order::updateOrder($request->all(),  $order->id);
 
-        $order->update($validated);
-        
-        return redirect()->route('orders.index')
-            ->with('success', 'Заказ успешно обновлен');
+            return redirect()->route('orders.index')
+                ->with('success', 'Заказ успешно обновлен');
+        } catch (\Exception $e){
+            return redirect()->back()
+                ->withErrors(['error'=> $e->getMessage()]);
+        }
     }
 
     public function destroy(Order $order)
     {
-        $order->delete();
-        
-        return redirect()->route('orders.index')
-            ->with('success', 'Заказ успешно удален');
+        try {
+            Order::deleteOrderById($order->id);
+
+            return redirect()->route('orders.index')
+                ->with('success', 'Заказ успешно удален');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 }

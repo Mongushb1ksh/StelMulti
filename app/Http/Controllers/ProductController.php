@@ -10,7 +10,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with('category')->paginate(10);
+        $products = Product::with('category')->latest()->paginate(10);
         return view('products.index', compact('products'));
     }
 
@@ -22,16 +22,13 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'quantity' => 'required|integer|min:0',
-            'unit_price' => 'required|numeric|min:0'
-        ]);
-
-        Product::create($validated);
-        return redirect()->route('products.index')->with('success', 'Товар успешно добавлен');
+        try {
+            Product::createProduct($request->all());
+            return redirect()->route('products.index')->with('success', 'Товар успешно добавлен');
+        } catch (\Exception $e){
+            return redirect()->back()
+                ->withErrors(['error'=> $e->getMessage()]);
+        }
     }
 
     public function show(Product $product)
@@ -47,21 +44,26 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'quantity' => 'required|integer|min:0',
-            'unit_price' => 'required|numeric|min:0'
-        ]);
-
-        $product->update($validated);
-        return redirect()->route('products.index')->with('success', 'Товар успешно обновлен');
+        try {
+            Product::updateProduct($request->all(), $product->id);
+            return redirect()->route('products.index')->with('success', 'Товар успешно обновлен');
+        } catch (\Exception $e){
+            return redirect()->back()
+                ->withErrors(['error'=> $e->getMessage()]);
+        }
     }
 
     public function destroy(Product $product)
     {
-        $product->delete();
-        return redirect()->route('products.index')->with('success', 'Товар успешно удален');
-    }
+
+        try {
+            Product::deleteProduct($product->id);
+
+            return redirect()->route('orders.index')
+                ->with('success', 'Товар успешно удален');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
+}
 }

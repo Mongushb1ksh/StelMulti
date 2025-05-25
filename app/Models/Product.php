@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
 
 class Product extends Model
 {
@@ -29,96 +32,62 @@ class Product extends Model
         return $this->hasMany(Order::class);
     }
 
-    public static function getAll(Request $request): JsonResponse
+    public static function validateData(array $data)
     {
-        $products = self::with('category')->get();
-
-        return response()->json([
-            'status' => 'success',
-            'products' => $products
-        ]);
-    }
-
-    public static function getById(Request $request, $id): JsonResponse
-    {
-        $product = self::with('category')->find($id);
-
-        if (!$product) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Product not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'product' => $product
-        ]);
-    }
-
-    public static function createProduct(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
+        $validator = Validator::make($data, [
             'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'unit_price' => 'required|numeric|min:0',
+            'unit_price' => 'required|numeric|min:0'
         ]);
 
-        $product = self::create($validated);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Product created successfully',
-            'product' => $product
-        ], 201);
-    }
-
-    public static function updateProduct(Request $request, $id): JsonResponse
-    {
-        $product = self::find($id);
-
-        if (!$product) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Product not found'
-            ], 404);
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
         }
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'quantity' => 'sometimes|integer|min:0',
-            'category_id' => 'sometimes|exists:categories,id',
-            'unit_price' => 'sometimes|numeric|min:0',
-        ]);
+        return $validator->validated();
+    }
 
+    public static function createProduct(array $data): self
+    {
+        $validated = self::validateData($data, true);
+        return self::create($validated);
+    }
+
+
+    public static function updateProduct(array $data, int $id): self
+    {
+        $product = self::find($id);
+        $validated = self::validateData($data, true);
         $product->update($validated);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Product updated successfully',
-            'product' => $product
-        ]);
+        return $product;
     }
 
-    public static function deleteProduct(Request $request, $id): JsonResponse
+    public function isAvailable(int $quantity = 1): bool
+    {
+        return $this->quantity >= $quantity;
+    }
+
+    public function decreaseQuantity(int $quantity): bool
+    {
+        $this->quantity -= $quantity;
+        return $this->save();
+    }
+
+    public function increaseQuantity(int $quantity): bool
+    {
+        $this->quantity += $quantity;
+        return $this->save();
+    }
+    public static function deleteOrderById(int $id): void
+    {
+            $order = self::findOrFail($id);
+            $order->delete();
+    }
+    public static function deleteProduct(int $id): void
     {
         $product = self::find($id);
-
-        if (!$product) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Product not found'
-            ], 404);
-        }
-
         $product->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Product deleted successfully'
-        ]);
     }
 }

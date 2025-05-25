@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class ProductionTask extends Model
 {
@@ -17,6 +18,20 @@ class ProductionTask extends Model
         'start_date',
         'end_date',
         'quality_check',
+        'start_date',
+        'end_date'
+    ];
+
+    protected $dates = ['start_date', 'end_date'];
+
+    const STATUS_QUEUED = 'queued';
+    const STATUS_IN_PROGRESS = 'in_progress';
+    const STATUS_COMPLETED = 'completed';
+
+    public static $statuses = [
+        self::STATUS_QUEUED => 'В очереди',
+        self::STATUS_IN_PROGRESS => 'В работе',
+        self::STATUS_COMPLETED => 'Завершено',
     ];
 
     public function order()
@@ -24,93 +39,45 @@ class ProductionTask extends Model
         return $this->belongsTo(Order::class);
     }
 
-    public static function getAll(Request $request): JsonResponse
+    public static function validateData(array $data)
     {
-        $tasks = self::with('order')->get();
-
-        return response()->json([
-            'status' => 'success',
-            'tasks' => $tasks
-        ]);
-    }
-
-    public static function getById(Request $request, $id): JsonResponse
-    {
-        $task = self::with('order')->find($id);
-
-        if (!$task) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Production task not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'task' => $task
-        ]);
-    }
-
-    public static function createTask(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
+        $validator = Validator::make($data, [
             'order_id' => 'required|exists:orders,id',
             'status' => 'required|string|in:queued,in_progress,completed',
             'start_date' => 'required|date',
             'quality_check' => 'nullable|string',
         ]);
+        
 
-        $task = self::create($validated);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Production task created successfully',
-            'task' => $task
-        ], 201);
-    }
-
-    public static function updateTask(Request $request, $id): JsonResponse
-    {
-        $task = self::find($id);
-
-        if (!$task) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Production task not found'
-            ], 404);
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
         }
 
-        $validated = $request->validate([
-            'status' => 'sometimes|string|in:queued,in_progress,completed',
-            'end_date' => 'nullable|date',
-            'quality_check' => 'nullable|string',
-        ]);
+        return $validator->validated();
+    }
 
+    public static function createTask(array $data): self
+    {
+        $validated = self::validateData($data, true);
+        return self::create($validated);
+    }
+
+    public static function updateTask(array $data, int $id): self
+    {
+        $task = self::findOrFail($id);
+        $validated = self::validateData($data, true);
         $task->update($validated);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Production task updated successfully',
-            'task' => $task
-        ]);
+        return $task;
     }
 
-    public static function deleteTask(Request $request, $id): JsonResponse
+    public function getStatusText(): string
     {
-        $task = self::find($id);
+        return self::$statuses[$this->status] ?? $this->status ?? 'Неизвестный статус';
+    }
 
-        if (!$task) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Production task not found'
-            ], 404);
-        }
-
+    public static function deleteTask(int $id): void
+    {
+        $task = self::findOrFail($id);
         $task->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Production task deleted successfully'
-        ]);
     }
 }

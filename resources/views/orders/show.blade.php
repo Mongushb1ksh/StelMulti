@@ -3,48 +3,73 @@
 @section('main_content')
 <div class="order-details">
     <h2>Детали заказа #{{ $order->id }}</h2>
+        <div>
+            <a href="{{ route('orders.edit', $order) }}" class="btn btn-warning">Редактировать</a>
+            <form action="{{ route('orders.destroy', $order) }}" method="POST" class="d-inline">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Вы уверены?')">Удалить</button>
+            </form>
+        </div>
 
-    <p><strong>Клиент:</strong> {{ $order->user->name }}</p>
-    <p><strong>Статус:</strong> {{ $order->status }}</p>
-    <p><strong>Общая стоимость:</strong> {{ $order->total_price ?? 'N/A' }}</p>
-    <p><strong>Дата создания:</strong> {{ $order->created_at->format('d.m.Y') }}</p>
+        <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Информация о заказе</h5>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <strong>Клиент:</strong> {{ $order->client_name }} ({{ $order->client_email }})
+                </li>
+                <li class="list-group-item">
+                    <strong>Товар:</strong> {{ $order->product->name }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Количество:</strong> {{ $order->quantity }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Статус:</strong>
+                    <span class="badge bg-{{ $order->status === 'completed' ? 'success' : ($order->status === 'cancelled' ? 'danger' : 'warning') }}">
+                        {{ $order->getStatusText() }}
+                    </span>
+                </li>
+                <li class="list-group-item">
+                    <strong>Менеджер:</strong> {{ $order->manager->name }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Дата создания:</strong> {{ $order->created_at->format('d.m.Y H:i') }}
+                </li>
+            </ul>
+        </div>
+    </div>
+    @if($order->productionTask)
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Производственная задача</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>Статус:</strong>
+                        <span class="badge bg-{{ $order->productionTask->status === 'completed' ? 'success' : 'warning' }}">
+                            {{ $order->productionTask->getStatusText() }}
+                        </span>
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Дата начала:</strong> {{ $order->productionTask->start_date->format('d.m.Y H:i') }}
+                    </li>
+                    @if($order->productionTask->end_date)
+                        <li class="list-group-item">
+                            <strong>Дата завершения:</strong> {{ $order->productionTask->end_date->format('d.m.Y H:i') }}
+                        </li>
+                    @endif
+                    @if($order->productionTask->quality_check)
+                        <li class="list-group-item">
+                            <strong>Контроль качества:</strong> {{ $order->productionTask->quality_check }}
+                        </li>
+                    @endif
+                </ul>
+            </div>
+        </div>
+    @endif
 
-    <h3>Товары</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Количество</th>
-                <th>Цена за единицу</th>
-                <th>Общая стоимость</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($order->items as $item)
-                <tr>
-                    <td>{{ $item->product_name }}</td>
-                    <td>{{ $item->quantity }}</td>
-                    <td>{{ $item->price }} руб.</td>
-                    <td>{{ $item->quantity * $item->price }} руб.</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
 
-    <!-- Форма обновления статуса -->
-    <form action="{{ route('orders.update-status', $order) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <label for="status">Обновить статус:</label>
-        <select name="status" id="status" required>
-            <option value="new" {{ $order->status === 'new' ? 'selected' : '' }}>Новый</option>
-            <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>В обработке</option>
-            <option value="production" {{ $order->status === 'production' ? 'selected' : '' }}>В производстве</option>
-            <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>Готово</option>
-            <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Отгружено</option>
-        </select>
-        <button type="submit" class="btn btn-primary">Обновить</button>
-    </form>
 </div>
 
 <style>

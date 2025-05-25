@@ -1,14 +1,8 @@
-@extends('layout')
+@extends('layouts.app')
 
 @section('main_content')
 <div class="production-container">
     <h2>Создание производственного задания</h2>
-
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
 
     @if($errors->any())
         <div class="alert alert-danger">
@@ -22,39 +16,37 @@
 
     <form action="{{ route('production.store') }}" method="POST">
         @csrf
-
-        <!-- Выбор заказа -->
-        <div class="form-group">
-            <label for="order_id">Заказ:</label>
-            <select name="order_id" id="order_id" class="form-control" required>
+        <div class="mb-3">
+            <label for="order_id" class="form-label">Заказ</label>
+            <select name="order_id" id="order_id" class="form-select" required>
                 <option value="">Выберите заказ</option>
                 @foreach($orders as $order)
-                    <option value="{{ $order->id }}">Заказ #{{ $order->id }}</option>
+                    <option value="{{ $order->id }}">Заказ #{{ $order->id }} - {{ $order->product->name }}</option>
                 @endforeach
             </select>
         </div>
 
-        <!-- Материалы -->
-        <div class="form-group">
-            <label>Материалы:</label>
-            <div id="materials-container">
-                @for ($i = 0; $i < 5; $i++) <!-- Фиксированное количество полей -->
-                    <div class="material-row form-inline mb-2">
-                        <select name="materials[{{ $i }}][id]" class="form-control mr-2" >
-                            <option value="">Выберите материал</option>
-                            @foreach($materials as $material)
-                                <option value="{{ $material->id }}">{{ $material->name }}</option>
-                            @endforeach
-                        </select>
-                        <input type="number" name="materials[{{ $i }}][quantity_required]" class="form-control" placeholder="Необходимое количество" min="1" >
-                    </div>
-                @endfor
-            </div>
+        <div class="mb-3">
+            <label for="status" class="form-label">Статус</label>
+            <select name="status" id="status" class="form-select" required>
+                @foreach((new App\Models\ProductionTask)::$statuses as $key => $status)
+                    <option value="{{ $key }}">{{ $status }}</option>
+                @endforeach
+            </select>
         </div>
 
+        <div class="mb-3">
+            <label for="start_date" class="form-label">Дата начала</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" required>
+        </div>
 
-        <!-- Кнопка отправки -->
+        <div class="mb-3">
+            <label for="quality_check" class="form-label">Примечания по качеству</label>
+            <textarea name="quality_check" id="quality_check" class="form-control" rows="3"></textarea>
+        </div>
+
         <button type="submit" class="btn btn-primary">Создать задание</button>
+        <a href="{{ route('production.index') }}" class="btn btn-secondary">Отмена</a>
     </form>
 </div>
 @endsection

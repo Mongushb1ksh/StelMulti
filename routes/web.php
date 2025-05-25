@@ -9,7 +9,8 @@ use App\Http\Controllers\{
     ProductionController,
     StockController,
     AdminController,
-    ProfileController
+    ProfileController,
+    CategoryController
 };
 
 // Главная
@@ -34,10 +35,18 @@ Route::middleware('auth')->group(function () {
     Route::resource('products', ProductController::class);
     
     // Заказы
-    Route::resource('orders', OrderController::class);
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
+    Route::put('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
     
     // Производство
     Route::resource('production', ProductionController::class);
+    Route::get('/production/{production}', [ProductionController::class, 'show'])->name('production.show');
+    Route::get('/production/create', [ProductionController::class, 'create'])->name('production.create');
     Route::post('/production/{task}/complete', [ProductionController::class, 'complete'])
          ->name('production.complete');
     

@@ -4,8 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 
 class Order extends Model
 {
@@ -19,6 +20,35 @@ class Order extends Model
         'status',
         'manager_id',
     ];
+
+    const STATUS_PENDING = 'pending';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+
+
+    public static $statuses = [
+        self::STATUS_PENDING => 'В ожидании',
+        self::STATUS_PROCESSING => 'В обработке',
+        self::STATUS_COMPLETED => 'Завершен',
+        self::STATUS_CANCELLED => 'Отменен',
+    ];
+
+
+    private static function validateOrderData(array $data)
+    {
+        $validator = Validator::make($data, [
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+        
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+        return $validator->validated();
+    }
 
     public function product()
     {
@@ -35,98 +65,39 @@ class Order extends Model
         return $this->hasOne(ProductionTask::class);
     }
 
-    public static function getAll(Request $request): JsonResponse
+    public static function createNewOrder(array $data): self
     {
-        $orders = self::with(['product', 'manager', 'productionTask'])->get();
+        $validated = self::validateOrderData($data);
+        $validated['status'] = self::STATUS_PENDING;
+        $validated['manager_id'] = Auth::id();
 
-        return response()->json([
-            'status' => 'success',
-            'orders' => $orders
-        ]);
+        return self::create($validated);
     }
 
-    public static function getById(Request $request, $id): JsonResponse
+    public static function updateOrder(array $data, int $id): self
     {
-        $order = self::with(['product', 'manager', 'productionTask'])->find($id);
+        $order = self::findOrFail($id);
 
-        if (!$order) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Order not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'order' => $order
-        ]);
-    }
-
-    public static function createOrder(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'client_name' => 'required|string|max:255',
-            'client_email' => 'required|email|max:255',
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'status' => 'required|string|in:pending,processing,completed,cancelled',
-        ]);
-
-        $validated['manager_id'] = $request->user()->id;
-
-        $order = self::create($validated);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Order created successfully',
-            'order' => $order
-        ], 201);
-    }
-
-    public static function updateOrder(Request $request, $id): JsonResponse
-    {
-        $order = self::find($id);
-
-        if (!$order) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Order not found'
-            ], 404);
-        }
-
-        $validated = $request->validate([
-            'client_name' => 'sometimes|string|max:255',
-            'client_email' => 'sometimes|email|max:255',
-            'product_id' => 'sometimes|exists:products,id',
-            'quantity' => 'sometimes|integer|min:1',
-            'status' => 'sometimes|string|in:pending,processing,completed,cancelled',
-        ]);
+        $validated = self::validateOrderData($data, true);
 
         $order->update($validated);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Order updated successfully',
-            'order' => $order
-        ]);
+        return $order;
     }
 
-    public static function deleteOrder(Request $request, $id): JsonResponse
+    public static function deleteOrderById(int $id): void
     {
-        $order = self::find($id);
+            $order = self::findOrFail($id);
+            $order->delete();
+    }
+    public function canBeEdited(): bool
+    {
+        return $this->status !== self::STATUS_COMPLETED && 
+               $this->status !== self::STATUS_CANCELLED;
+    }
 
-        if (!$order) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Order not found'
-            ], 404);
-        }
-
-        $order->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Order deleted successfully'
-        ]);
+    public function getStatusText(): string
+    {
+        return self::$statuses[$this->status] ?? $this->status;
     }
 }
