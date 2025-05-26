@@ -35,16 +35,16 @@
                                 </p>
                             </td>
                             <td>{{ $order->manager->name }}</td>
-                            <td>
+                            <td class="table-action">
                                 <a href="{{ route('orders.show', $order) }}" class="btn btn-primary">Просмотр</a>
                                 <a href="{{ route('orders.edit', $order) }}" class="btn btn-primary">Редактировать</a>
                                 <form action="{{ route('orders.destroy', $order) }}" 
                                       method="POST" class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger"
+                                    <button type="submit" class="btn-primary"
                                             onclick="return confirm('Удалить этот заказ?')">
-                                        Удалить
+                                            Удалить
                                     </button>
                                 </form>
                             </td>
@@ -58,4 +58,18 @@
         </div>
     </div>
 </div>
+<style>
+    .table-action{
+        display: flex;
+        gap: 2%;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    table{
+        max-width: 1920px;
+    }
+    .card{
+        max-width: 1920px;
+    }
+</style>
 @endsection

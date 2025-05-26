@@ -6,15 +6,6 @@
 <div class="container">
     <h1 class="mb-4">Управление складом</h1>
 
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <a class="nav-link active" href="{{ route('stock.index') }}">Товары</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{{ route('stock.materials') }}">Материалы</a>
-        </li>
-    </ul>
-
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Товары на складе</span>
@@ -33,6 +24,7 @@
                             <th>Количество</th>
                             <th>Цена</th>
                             <th>Статус</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,6 +45,19 @@
                                 @else
                                 <span class="badge bg-success">В наличии</span>
                                 @endif
+                            </td>
+                            <td>
+                                <a href="{{ route('products.edit', $product) }}" 
+                                class="btn btn-sm btn-primary">Редактировать</a>
+                                <form action="{{ route('products.destroy', $product) }}" 
+                                    method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-primary"
+                                        onclick="return confirm('Удалить этот товар?')">
+                                    Удалить
+                                </button>
+                            </form>
                             </td>
                         </tr>
                         @endforeach

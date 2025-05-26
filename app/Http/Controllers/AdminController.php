@@ -4,27 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
-        $stats = [
-            'users' => User::count(),
-            'active_users' => User::where('is_blocked', false)->count(),
-            'blocked_users' => User::where('is_blocked', true)->count(),
-        ];
-        
+        $stats = User::getDashboardStats();
         return view('admin.dashboard', compact('stats'));
     }
 
     public function index()
     {
-        $users = User::with('role')
-            ->latest()
-            ->paginate(10);
-            
+        $users = User::getUsersList();
         return view('admin.users.index', compact('users'));
     }
 
@@ -35,22 +26,15 @@ class AdminController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id',
-        ]);
-
-        User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'role_id' => $validated['role_id'],
-        ]);
-        
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Пользователь создан');
+        try {
+            User::createUser($request->all());
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Пользователь создан');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function edit(User $user)
@@ -60,52 +44,45 @@ class AdminController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique('users')->ignore($user->id),
-            ],
-            'password' => 'nullable|string|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id',
-        ]);
-
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-        $user->role_id = $validated['role_id'];
-        
-        if ($validated['password']) {
-            $user->password = bcrypt($validated['password']);
+        try {
+            User::updateUser($request->all(), $user->id);
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Пользователь обновлен');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => $e->getMessage()]);
         }
-        
-        $user->save();
-        
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Пользователь обновлен');
+    }
+
+    public function approve(User $user)
+    {
+        try {
+            User::approveUser($user->id);
+            return back()->with('success', 'Пользователь одобрен');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function block(User $user)
     {
-        $user->update(['is_blocked' => true]);
-        
-        return back()->with('success', 'Пользователь заблокирован');
-    }
-
-    public function unblock(User $user)
-    {
-        $user->update(['is_blocked' => false]);
-        
-        return back()->with('success', 'Пользователь разблокирован');
+        try {
+            User::blockUser($user->id);
+            return back()->with('success', 'Пользователь заблокирован');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function destroy(User $user)
     {
-        $user->delete();
-        
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Пользователь удален');
+        try {
+            User::deleteUser($user->id);
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Пользователь удален');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 }

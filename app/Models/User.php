@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class User extends Authenticatable
 {
@@ -36,129 +37,130 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    public function orders()
-    {
-        return $this->hasMany(Order::class, 'manager_id');
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(Log::class);
-    }
 
     public function isAdmin()
     {
         return $this->role_id === 1;
     }
 
-    public function isProductionWorker()
+    public function isApproved()
     {
-        return $this->role_id === 2;
+        return !$this->is_blocked;
     }
 
-    public function isWarehouseManager()
+ 
+    public static function registerUser(array $data): self
     {
-        return $this->role_id === 3;
-    }
-
-    public static function register(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-        ]);
-
-        $user = self::create([
+        $validated = self::validateRegistrationData($data);
+        
+        return self::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role_id' => 4, // Default role (guest or basic user)
+            'role_id' => 5,
+            'is_blocked' => true,
         ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User registered successfully',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-        ], 201);
     }
 
-    public static function login(Request $request): JsonResponse
+    public static function attemptLogin(array $credentials): bool
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $user = self::where('email', $credentials['email'])->first();
 
-        $user = self::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid credentials'
-            ], 401);
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return false;
         }
 
         if ($user->is_blocked) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Account is blocked'
-            ], 403);
+            throw new \Exception('Ваш аккаунт ожидает подтверждения администратором');
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User logged in successfully',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-        ]);
+        Auth::login($user);
+        return true;
     }
 
-    public static function logout(Request $request): JsonResponse
+    public static function approveUser(int $userId): void
     {
-        $request->user()->tokens()->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Logged out successfully'
-        ]);
+        $user = self::findOrFail($userId);
+        $user->update(['is_blocked' => false]);
     }
 
-    public static function profile(Request $request): JsonResponse
+    public static function blockUser(int $userId): void
     {
-        return response()->json([
-            'status' => 'success',
-            'user' => $request->user()
-        ]);
+        $user = self::findOrFail($userId);
+        $user->update(['is_blocked' => true]);
     }
 
-    public static function updateProfile(Request $request): JsonResponse
+    public static function validateRegistrationData(array $data): array
     {
-        $user = $request->user();
+        $validator = \Validator::make($data, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
-        $validated = $request->validate([
+        if ($validator->fails()) {
+            throw new \Illuminate\Validation\ValidationException($validator);
+        }
+
+        return $validator->validated();
+    }
+
+    public static function validateUpdateData(array $data, int $userId): array
+    {
+        $validator = \Validator::make($data, [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,'.$user->id,
-            'password' => 'sometimes|string|min:8',
+            'email' => [
+                'sometimes',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($userId),
+            ],
+            'password' => 'sometimes|string|min:8|confirmed',
+            'role_id' => 'sometimes|exists:roles,id',
         ]);
 
-        if (isset($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
+        if ($validator->fails()) {
+            throw new \Illuminate\Validation\ValidationException($validator);
         }
 
-        $user->update($validated);
+        return $validator->validated();
+    }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Profile updated successfully',
-            'user' => $user
+    public static function createUser(array $data): self
+    {
+        $validated = self::validateUpdateData($data, 0);
+        
+        return self::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role_id' => $validated['role_id'],
+            'is_blocked' => false, // Админ создает сразу активных пользователей
         ]);
+    }
+
+    public static function updateUser(array $data, int $userId): self
+    {
+        $user = self::findOrFail($userId);
+        $validated = self::validateUpdateData($data, $userId);
+        
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->role_id = $validated['role_id'];
+        
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        
+        $user->save();
+        
+        return $user;
+    }
+
+    public static function deleteUser(int $userId): void
+    {
+        $user = self::findOrFail($userId);
+        $user->delete();
     }
 }

@@ -4,16 +4,19 @@
 
 @section('main_content')
 <div class="container">
-    <h1 class="mb-4">ERP Система "Сталь Мульти"</h1>
-    
+     @if(auth()->check())
+    <h1 class="mb-4">Главная</h1>
+    @endif
     @auth
-    <div class="row mb-4">
+    <div class="column">
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body text-center">
                     <h5 class="card-title">Заказы</h5>
                     <p class="display-4">{{ $ordersCount }}</p>
+                    @if(optional(auth()->user())->role?->name === 'Client Manager')
                     <a href="{{ route('orders.index') }}" class="btn btn-primary">Перейти</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -37,7 +40,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div>
         <div class="card-header">
             Последние производственные задачи
         </div>
@@ -45,7 +48,7 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th>№</th>
                         <th>Заказ</th>
                         <th>Статус</th>
                         <th>Срок</th>
@@ -55,7 +58,7 @@
                     @foreach($recentTasks as $task)
                     <tr>
                         <td>{{ $task->id }}</td>
-                        <td>Заказ #{{ $task->order_id }}</td>
+                        <td>Заказ №{{ $task->order_id }}</td>
                         <td>
                             <span class="badge bg-{{ $task->status === 'completed' ? 'success' : 'warning' }}">
                                 {{ $task->status === 'completed' ? 'Завершено' : 'В работе' }}
@@ -71,8 +74,74 @@
     @else
     <div class="alert alert-info">
         <h4>Добро пожаловать!</h4>
-        <p>Пожалуйста, <a href="{{ route('login') }}">войдите</a> или <a href="{{ route('register') }}">зарегистрируйтесь</a> для работы с системой.</p>
+        <p>Пожалуйста, <a style="text-decoration: none; color: #86b7fe;" href="{{ route('login') }}">войдите</a> или <a style="text-decoration: none; color: #86b7fe;" href="{{ route('register') }}">зарегистрируйтесь</a> для работы с системой.</p>
     </div>
     @endauth
 </div>
+
+<style>
+    .column{
+        display: flex;
+        justify-content: space-around;
+    }
+    .card {
+        
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .col-md-4{
+        width: 30%;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+    }
+
+    .display-4 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 20px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 20px;
+        }
+
+        .display-4 {
+            font-size: 2rem;
+        }
+    }
+</style>
 @endsection

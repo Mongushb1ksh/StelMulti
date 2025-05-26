@@ -24,16 +24,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
+Route::resource('products', ProductController::class);
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     // Профиль
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    
-    // Продукция
-    Route::resource('products', ProductController::class);
-    
+
+
     // Заказы
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
@@ -44,18 +44,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
     
     // Производство
-    Route::resource('production', ProductionController::class);
-    Route::get('/production/{production}', [ProductionController::class, 'show'])->name('production.show');
-    Route::get('/production/create', [ProductionController::class, 'create'])->name('production.create');
-    Route::post('/production/{task}/complete', [ProductionController::class, 'complete'])
-         ->name('production.complete');
+    Route::resource('production', ProductionController::class)->parameters(['production' => 'productionTask']);
+    Route::post('production/{productionTask}/complete', [ProductionController::class, 'complete'])->name('production.complete');
     
     // Склад
     Route::prefix('stock')->group(function () {
         Route::get('/', [StockController::class, 'index'])->name('stock.index');
-        Route::get('/materials', [StockController::class, 'materials'])->name('stock.materials');
-        Route::post('/materials/add', [StockController::class, 'addMaterial'])->name('stock.materials.add');
-        Route::post('/materials/{material}/adjust', [StockController::class, 'adjustStock'])->name('stock.materials.adjust');
+
     });
     
     // Админка

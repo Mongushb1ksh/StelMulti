@@ -10,65 +10,92 @@ class ProductionController extends Controller
 {
     public function index()
     {
-        $tasks = ProductionTask::with('order')->latest()->paginate(10);
-        return view('production.index', compact('tasks'));
+        $productionTasks = ProductionTask::with('order')->latest()->paginate(10);
+        return view('production.index', compact('productionTasks'));
     }
 
     public function create()
     {
-        $orders = Order::where('status', Order::STATUS_PROCESSING)->get();
+        $orders = Order::where('status', Order::STATUS_PROCESSING)
+            ->with('product')
+            ->get();
+            
         return view('production.create', compact('orders'));
     }
 
     public function store(Request $request)
     {
-        try {        
+        try {
             $data = $request->all();
             $data['start_date'] = now();
-            ProductionTask::createTask($request->all());
-            return redirect()->route('products.index')->with('success', 'Производственная задача создана');;
-        } catch (\Exception $e){
-            return redirect()->back()
-                ->withErrors(['error'=> $e->getMessage()]);
+            
+            ProductionTask::createTask($data);
+            
+            return redirect()->route('production.index')
+                ->with('success', 'Производственная задача успешно создана');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => $e->getMessage()]);
         }
     }
 
     public function show(ProductionTask $productionTask)
     {
+        $productionTask->load('order.product');
         return view('production.show', compact('productionTask'));
     }
 
     public function edit(ProductionTask $productionTask)
     {
-        $orders = Order::where('status', Order::STATUS_PROCESSING)->get();
+        $orders = Order::where('status', Order::STATUS_PROCESSING)
+            ->with('product')
+            ->get();
+            
         return view('production.edit', compact('productionTask', 'orders'));
     }
 
     public function update(Request $request, ProductionTask $productionTask)
     {
         try {
-            ProductionTask::createTask($request->all(), $productionTask->id);
-            return redirect()->route('products.index')->with('success', 'Задача обновлена');;;
-        } catch (\Exception $e){
-            return redirect()->back()
-                ->withErrors(['error'=> $e->getMessage()]);
+            ProductionTask::updateTask($request->all(), $productionTask->id);
+            
+            return redirect()->route('production.show', $productionTask)
+                ->with('success', 'Задача успешно обновлена');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function complete(Request $request, ProductionTask $productionTask)
+    public function complete(ProductionTask $productionTask, Request $request)
     {
-        $validated = $request->validate(['quality_check' => 'required|string',]);
-        $productionTask->completeTask($validated['quality_check']);
-        return redirect()->route('production-tasks.show', $productionTask)->with('success', 'Производственная задача завершена');
+        try {
+            $request->validate([
+                'quality_check' => 'required|string'
+            ]);
+            
+            $productionTask->completeTask($request->quality_check);
+            
+            return redirect()->route('production.show', $productionTask)
+                ->with('success', 'Задача успешно завершена');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function destroy(ProductionTask $productionTask)
     {
         try {
             ProductionTask::deleteTask($productionTask->id);
-            return redirect()->route('production.index')->with('success', 'Задача удалена');
+            
+            return redirect()->route('production.index')
+                ->with('success', 'Задача успешно удалена');
         } catch (\Exception $e) {
-            return redirect()->back()
+            return back()
                 ->withErrors(['error' => $e->getMessage()]);
         }
     }

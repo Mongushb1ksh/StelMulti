@@ -32,6 +32,10 @@ header .user-info {
 
 }
 
+.btn-logout{
+    margin-right: 5%;
+}
+
 .menu-toggle {
     background: none;
     border: none;
@@ -367,15 +371,18 @@ form .error {
     margin-bottom: 20px;
     font-size: 14px;
     text-align: left;
+    border: 1px solid #dddddd;
 }
 
 .table thead {
     background-color: #f8f9fa;
+    border: 1px solid #dddddd;
 }
 
 .table thead th {
     padding: 10px;
     font-weight: bold;
+    border: 1px solid #dddddd;
     color: #333333;
     border-bottom: 2px solid #dddddd;
 }
@@ -383,6 +390,7 @@ form .error {
 .table tbody td {
     padding: 10px;
     border-bottom: 1px solid #dddddd;
+    border: 1px solid #dddddd;
 }
 
 .table tbody tr:hover {
@@ -779,4 +787,17 @@ body {
         width: 100%;
         overflow-x: auto;
     }
+}
+
+.table-action{
+    display: flex;
+    gap: 2%;
+    align-items: center;
+    flex-wrap: wrap;
+}
+table{
+    max-width: 1920px;
+}
+.card{
+    max-width: 1920px;
 }

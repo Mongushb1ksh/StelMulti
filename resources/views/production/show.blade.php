@@ -45,7 +45,7 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Завершить задачу</h5>
-                <form  method="POST">
+                <form method="POST" action="{{ route('production.complete', $productionTask) }}">
                     @csrf
                     <div class="mb-3">
                         <label for="quality_check" class="form-label">Результаты контроля качества</label>

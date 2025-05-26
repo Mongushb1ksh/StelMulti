@@ -25,21 +25,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($tasks as $task)
+                        @foreach($productionTasks as $productionTask)
                         <tr>
-                            <td>{{ $task->id }}</td>
-                            <td>Заказ №{{ $task->order_id }}</td>
-                            <td>{{ $task->order->product->name }}</td>
+                            <td>{{ $productionTask->id }}</td>
+                            <td>Заказ №{{ $productionTask->order_id }}</td>
+                            <td>{{ $productionTask->order->product->name }}</td>
                             <td>
-                                <span class="badge bg-{{ $task->status === 'completed' ? 'success' : 'warning' }}">
-                                    {{ $task->getStatusText() }}
+                                <span class="badge bg-{{ $productionTask->status === 'completed' ? 'success' : 'warning' }}">
+                                    {{ $productionTask->getStatusText() }}
                                 </span>
                             </td>
-                            <td>{{ $task->end_date ? $task->end_date->format('d.m.Y')}}</td>
-                            <td>{{ $task->end_date ? $task->end_date->format('d.m.Y') : '-' }}</td>
+                            <td>{{ $productionTask->start_date}}</td>
+                            <td>{{ $productionTask->end_date}}</td>
                             <td>
-                                <a href="{{ route('production.show', $task) }}" class="btn btn-primary">Просмотр</a>
-                                <a href="{{ route('production.edit', $task) }}" class="btn btn-primary">Редактировать</a>
+                                <a href="{{ route('production.show', $productionTask) }}" class="btn btn-primary">Просмотр</a>
+                                <a href="{{ route('production.edit', $productionTask) }}" class="btn btn-primary">Редактировать</a>
                             </td>
                         </tr>
                          @endforeach
@@ -47,7 +47,7 @@
                 </table>
             </div>
             
-            {{ $tasks->links() }}
+            {{ $productionTasks->links() }}
         </div>
     </div>
 </div>

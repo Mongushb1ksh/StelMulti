@@ -18,7 +18,6 @@ class ProductionTask extends Model
         'start_date',
         'end_date',
         'quality_check',
-        'start_date',
         'end_date'
     ];
 
@@ -64,10 +63,23 @@ class ProductionTask extends Model
 
     public static function updateTask(array $data, int $id): self
     {
-        $task = self::findOrFail($id);
+        $productionTask = self::findOrFail($id);
         $validated = self::validateData($data, true);
-        $task->update($validated);
-        return $task;
+        $productionTask->update($validated);
+        return $productionTask;
+    }
+
+    public function completeTask(string $qualityCheck): void
+    {
+        $this->update([
+            'status' => self::STATUS_COMPLETED,
+            'end_date' => now(),
+            'quality_check' => $qualityCheck
+        ]);
+        
+        if ($this->order) {
+            $this->order->update(['status' => Order::STATUS_COMPLETED]);
+        }   
     }
 
     public function getStatusText(): string
@@ -77,7 +89,7 @@ class ProductionTask extends Model
 
     public static function deleteTask(int $id): void
     {
-        $task = self::findOrFail($id);
-        $task->delete();
+        $productionTask = self::findOrFail($id);
+        $productionTask->delete();
     }
 }

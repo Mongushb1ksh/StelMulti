@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Production Worker'],
             ['name' => 'Warehouse Manager'],
             ['name' => 'Client Manager'],
+            ['name' => 'null'],
         ];
 
         foreach ($roles as $role) {

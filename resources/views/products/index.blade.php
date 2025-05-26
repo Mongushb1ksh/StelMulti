@@ -19,9 +19,12 @@
                         <th>#</th>
                         <th>Название</th>
                         <th>Категория</th>
+                        @if(auth()->check())
                         <th>Количество</th>
+                        @endif
                         <th>Цена</th>
                         <th>Действия</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -30,22 +33,13 @@
                         <td>{{ $product->id }}</td>
                         <td>{{ $product->name }}</td>
                         <td>{{ $product->category->name }}</td>
+                        @if(auth()->check())
                         <td>{{ $product->quantity }} шт.</td>
+                        @endif
                         <td>{{ number_format($product->unit_price, 2) }} ₽</td>
-                        <td>
+                        <td class="table-action">
                             <a href="{{ route('products.show', $product) }}" 
                                class="btn btn-sm btn-primary">Просмотр</a>
-                            <a href="{{ route('products.edit', $product) }}" 
-                               class="btn btn-sm btn-primary">Редактировать</a>
-                            <form action="{{ route('products.destroy', $product) }}" 
-                                  method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger"
-                                        onclick="return confirm('Удалить этот товар?')">
-                                    Удалить
-                                </button>
-                            </form>
                         </td>
                     </tr>
                     @endforeach
