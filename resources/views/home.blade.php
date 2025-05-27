@@ -51,20 +51,18 @@
                         <th>№</th>
                         <th>Заказ</th>
                         <th>Статус</th>
-                        <th>Срок</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($recentTasks as $task)
+                    @foreach($recentTasks as $productionTask)
                     <tr>
-                        <td>{{ $task->id }}</td>
-                        <td>Заказ №{{ $task->order_id }}</td>
+                        <td>{{ $productionTask->id }}</td>
+                        <td>Заказ №{{ $productionTask->order_id }}</td>
                         <td>
-                            <span class="badge bg-{{ $task->status === 'completed' ? 'success' : 'warning' }}">
-                                {{ $task->status === 'completed' ? 'Завершено' : 'В работе' }}
+                            <span class="badge bg-{{ $productionTask->status === 'completed' ? 'success' : 'warning' }}">
+                                {{ $productionTask->status === 'completed' ? 'Завершено' : 'В работе' }}
                             </span>
                         </td>
-                        <td>{{ $task->end_date?->format('d.m.Y') ?? '-' }}</td>
                     </tr>
                     @endforeach
                 </tbody>

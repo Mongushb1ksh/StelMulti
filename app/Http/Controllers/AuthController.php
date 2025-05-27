@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
@@ -13,24 +15,18 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        try {
-            $credentials = $request->only('email', 'password');
-            
-            if (User::attemptLogin($credentials)) {
-                $request->session()->regenerate();
-                return redirect()->intended('/');
-            }
-
-            return back()->withErrors([
-                'email' => 'Неверные учетные данные',
-            ]);
-        } catch (\Exception $e) {
-            return back()->withErrors([
-                'email' => $e->getMessage(),
-            ]);
+        $credentials = $request->only('email', 'password');
+        
+        if (User::attemptLogin($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->intended('/');
         }
+        return back()->withErrors([
+            'email' => 'Неверные учетные данные',
+        ]);
+
     }
 
     public function showRegistrationForm()
@@ -38,18 +34,10 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        try {
-            $user = User::registerUser($request->all());
-            
-            return redirect('/')
-                ->with('success', 'Регистрация прошла успешно! Ожидайте подтверждения администратора.');
-        } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->withErrors(['error' => $e->getMessage()]);
-        }
+        $user = User::registerUser($request->all());
+        return redirect('/')->with('success', 'Регистрация прошла успешно! Ожидайте подтверждения администратора.');
     }
 
     public function logout(Request $request)

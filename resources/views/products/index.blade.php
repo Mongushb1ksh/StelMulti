@@ -5,10 +5,15 @@
 @section('main_content')
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
+    @if(!auth()->check())
+        <h1>Главная</h1>
+    @endif
+        @if(optional(auth()->user())->role?->name === 'Warehouse Manager')
         <h1>Управление продукцией</h1>
         <a href="{{ route('products.create') }}" class="btn btn-primary">
             Добавить товар
         </a>
+        @endif
     </div>
 
     <div class="card">
@@ -16,7 +21,7 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th>№</th>
                         <th>Название</th>
                         <th>Категория</th>
                         @if(auth()->check())

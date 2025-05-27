@@ -24,9 +24,10 @@
     <aside class="sidebar">
         <ul>
             @if(!auth()->check())
+                <li> <a class="nav-link" href="{{ route('products.index') }}">Главная</a></li>
                 <li><a class="nav-link" href="{{ route('login') }}">Вход</a></li>
                 <li><a class="nav-link" href="{{ route('register') }}">Регистрация</a></li>
-                <li> <a class="nav-link" href="{{ route('products.index') }}">Главная</a></li>
+                
             @else
                 <li><a href="{{ route('home') }}" class="{{ request()->is('home') ? 'active' : '' }}">Главная</a></li>
                 <li> <a class="nav-link" href="{{ route('products.index') }}">Продукция</a></li>
@@ -40,7 +41,7 @@
                 <li><a class="nav-link" href="{{ route('production.index') }}">Производство</a></li>
                 @endif
                 @if(optional(auth()->user())->role?->name === 'Admin')
-                    <li><a href="/admin/users" class="{{ request()->is('admin/users') ? 'active' : '' }}">Пользователи</a></li>
+                    <li><a class="nav-link" href="{{ route('admin.dashboard') }}">Административная панель</a></li>
                 @endif
                 <li><a href="/profile" class="{{ route('profile.show') }}"">Профиль</a></li>
             @endif

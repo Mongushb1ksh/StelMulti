@@ -16,7 +16,8 @@ class AdminController extends Controller
     public function index()
     {
         $users = User::getUsersList();
-        return view('admin.users.index', compact('users'));
+        $stats = User::getDashboardStats();
+        return view('admin.users.index', compact('users', 'stats'));
     }
 
     public function create()

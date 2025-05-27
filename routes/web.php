@@ -54,13 +54,20 @@ Route::middleware('auth')->group(function () {
     });
     
     // Админка
-    Route::middleware('can:admin')->prefix('admin')->group(function () {
-        Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-        Route::resource('users', AdminController::class)->except(['show']);
+
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+
+    Route::prefix('admin')->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::resource('users', AdminController::class)->names([
+            'index' => 'admin.users.index',
+            'create' => 'admin.users.create',
+            'store' => 'admin.users.store',
+            'edit' => 'admin.users.edit',
+            'update' => 'admin.users.update',
+            'destroy' => 'admin.users.destroy',
+        ]);
+        Route::post('/users/{user}/approve', [AdminController::class, 'approve'])->name('admin.users.approve');
         Route::post('/users/{user}/block', [AdminController::class, 'block'])->name('admin.users.block');
-        Route::post('/users/{user}/unblock', [AdminController::class, 'unblock'])->name('admin.users.unblock');
-        
-        // Категории
-        Route::resource('categories', CategoryController::class)->except(['show']);
     });
 });
