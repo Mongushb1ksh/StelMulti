@@ -8,7 +8,25 @@
         <h1>Производственные задачи</h1>
         <a href="{{ route('production.create') }}" class="btn btn-primary">Создать задачу</a>
     </div>
-
+    <form method="GET" action="{{ route('production.index') }}" class="mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="status" class="form-label">Статус</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">Все</option>
+                    @foreach (App\Models\ProductionTask::$statuses as $key => $value)
+                        <option value="{{ $key }}" {{ request('status') == $key ? 'selected' : '' }}>
+                            {{ $value }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Применить</button>
+                <a href="{{ route('production.index') }}" class="btn btn-secondary">Очистить</a>
+            </div>
+        </div>
+    </form>
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">

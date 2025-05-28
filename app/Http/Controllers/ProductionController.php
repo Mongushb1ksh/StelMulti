@@ -8,15 +8,20 @@ use Illuminate\Http\Request;
 
 class ProductionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $productionTasks = ProductionTask::with('order')->latest()->paginate(10);
-        return view('production.index', compact('productionTasks'));
+        $filters = $request->only(['status']);
+        $query = ProductionTask::with('order')->latest();
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        $productionTasks = $query->paginate(10)->appends($filters);
+        return view('production.index', compact('productionTasks', 'filters'));
     }
 
     public function create()
     {
-        $orders = Order::where('status', Order::STATUS_PROCESSING)
+        $orders = Order::where('status', Order::STATUS_PENDING)
             ->with('product')
             ->get();
             
@@ -30,7 +35,10 @@ class ProductionController extends Controller
             $data['start_date'] = now();
             
             ProductionTask::createTask($data);
-            
+
+            $order = Order::find($data['order_id']);
+            $order->update(['status' => Order::STATUS_PROCESSING]);
+
             return redirect()->route('production.index')
                 ->with('success', 'Производственная задача успешно создана');
         } catch (\Exception $e) {
@@ -75,7 +83,9 @@ class ProductionController extends Controller
             $request->validate([
                 'quality_check' => 'required|string'
             ]);
-            
+
+            $order = Order::find($request['order_id']);
+            $order->update(['status' => Order::STATUS_COMPLETED]);
             $productionTask->completeTask($request->quality_check);
             
             return redirect()->route('production.show', $productionTask)

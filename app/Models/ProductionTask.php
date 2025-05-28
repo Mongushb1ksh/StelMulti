@@ -23,12 +23,10 @@ class ProductionTask extends Model
 
     protected $dates = ['start_date', 'end_date'];
 
-    const STATUS_QUEUED = 'queued';
     const STATUS_IN_PROGRESS = 'in_progress';
     const STATUS_COMPLETED = 'completed';
 
     public static $statuses = [
-        self::STATUS_QUEUED => 'В очереди',
         self::STATUS_IN_PROGRESS => 'В работе',
         self::STATUS_COMPLETED => 'Завершено',
     ];
@@ -80,6 +78,15 @@ class ProductionTask extends Model
         if ($this->order) {
             $this->order->update(['status' => Order::STATUS_COMPLETED]);
         }   
+    }
+
+    public static function filterTasks(array $filters)
+    {
+        $query = self::query();
+        if (isset($filters['status']) && array_key_exists($filters['status'], self::$statuses)) {
+            $query->where('status', $filters['status']);
+        }
+        return $query->get();
     }
 
     public function getStatusText(): string

@@ -9,10 +9,20 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with(['product', 'manager'])->latest()->paginate(10);
-        return view('orders.index', compact('orders'));
+        $filters = $request->only(['status', 'client_name']);
+        $query = Order::with(['product', 'manager'])->latest();
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['client_name'])) {
+            $query->where('client_name', 'like', '%' . $filters['client_name'] . '%');
+        }
+        $orders = $query->paginate(10)->appends($filters);
+        return view('orders.index', compact('orders', 'filters'));
     }
 
     public function create()
@@ -54,13 +64,15 @@ class OrderController extends Controller
             if (!$order->canBeEdited()) {
                 return redirect()->back()->with('error', 'Завершенные или отмененные заказы нельзя редактировать');
             }
-            Order::updateOrder($request->all(),  $order->id);
 
+            Order::updateOrder($request->all(), $order->id);
+    
             return redirect()->route('orders.index')
                 ->with('success', 'Заказ успешно обновлен');
-        } catch (\Exception $e){
-            return redirect()->back()
-                ->withErrors(['error'=> $e->getMessage()]);
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => $e->getMessage()]);
         }
     }
 

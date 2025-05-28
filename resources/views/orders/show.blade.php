@@ -35,7 +35,7 @@
                     <strong>Менеджер:</strong> {{ $order->manager->name }}
                 </li>
                 <li class="list-group-item">
-                    <strong>Дата создания:</strong> {{ $order->created_at->format('d.m.Y H:i') }}
+                    <strong>Дата создания:</strong> {{ $order->created_at }}
                 </li>
             </ul>
         </div>
@@ -52,11 +52,11 @@
                         </span>
                     </li>
                     <li class="list-group-item">
-                        <strong>Дата начала:</strong> {{ $order->productionTask->start_date->format('d.m.Y H:i') }}
+                        <strong>Дата начала:</strong> {{ $order->productionTask->start_date}}
                     </li>
                     @if($order->productionTask->end_date)
                         <li class="list-group-item">
-                            <strong>Дата завершения:</strong> {{ $order->productionTask->end_date->format('d.m.Y H:i') }}
+                            <strong>Дата завершения:</strong> {{ $order->productionTask->end_date}}
                         </li>
                     @endif
                     @if($order->productionTask->quality_check)

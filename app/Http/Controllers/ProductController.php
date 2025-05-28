@@ -9,12 +9,23 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')->latest()->paginate(10);
-        return view('products.index', compact('products'));
-    }
+        $filters = $request->only(['category_id', 'name']);
+        $query = Product::with('category')->latest();
 
+        if (!empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (!empty($filters['name'])) {
+            $query->where('name', 'like', '%' . $filters['name'] . '%');
+        }
+    
+        $products = $query->paginate(10)->appends($filters);
+        $categories = Category::all();
+        return view('products.index', compact('products', 'categories', 'filters'));;
+    }
     public function create()
     {
         $categories = Category::all();
@@ -79,5 +90,7 @@ class ProductController extends Controller
             return redirect()->back()
                 ->withErrors(['error' => $e->getMessage()]);
         }
-}
+    }
+
+    
 }

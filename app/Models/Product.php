@@ -82,6 +82,17 @@ class Product extends Model
         $product->update($validated);
         return $product;
     }
+    public static function filterProducts(array $filters)
+    {
+        $query = self::query();
+        if (isset($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+        if (isset($filters['name'])) {
+            $query->where('name', 'like', '%' . $filters['name'] . '%');
+        }
+        return $query->get();
+    }
 
     public function isAvailable(int $quantity = 1): bool
     {

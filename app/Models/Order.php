@@ -29,7 +29,7 @@ class Order extends Model
 
     public static $statuses = [
         self::STATUS_PENDING => 'В ожидании',
-        self::STATUS_PROCESSING => 'В обработке',
+        self::STATUS_PROCESSING => 'В работе',
         self::STATUS_COMPLETED => 'Завершен',
         self::STATUS_CANCELLED => 'Отменен',
     ];
@@ -77,12 +77,35 @@ class Order extends Model
     public static function updateOrder(array $data, int $id): self
     {
         $order = self::findOrFail($id);
-
-        $validated = self::validateOrderData($data, true);
-
-        $order->update($validated);
-
+    
+        // Валидация данных
+        $validated = self::validateOrderData($data);
+    
+        // Обновление полей заказа
+        $order->update([
+            'client_name' => $validated['client_name'],
+            'client_email' => $validated['client_email'],
+            'product_id' => $validated['product_id'],
+            'quantity' => $validated['quantity'],
+            'status' => $data['status'] ?? $order->status, // Если статус не передан, оставляем текущий
+        ]);
+    
         return $order;
+    }
+
+    public static function filterOrders(array $filters)
+    {
+        $query = self::query();
+
+        if (isset($filters['status']) && array_key_exists($filters['status'], self::$statuses)) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (isset($filters['client_name'])) {
+            $query->where('client_name', 'like', '%' . $filters['client_name'] . '%');
+        }
+
+        return $query->get();
     }
 
     public static function deleteOrderById(int $id): void

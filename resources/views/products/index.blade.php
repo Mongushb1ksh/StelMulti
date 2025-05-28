@@ -15,6 +15,30 @@
         </a>
         @endif
     </div>
+    <form method="GET" action="{{ route('products.index') }}" class="mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="category_id" class="form-label">Категория</label>
+                <select name="category_id" id="category_id" class="form-select">
+                    <option value="">Все</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-auto">
+                <label for="name" class="form-label">Название товара</label>
+                <input type="text" name="name" id="name" class="form-control" 
+                    value="{{ request('name') }}" placeholder="Поиск по названию">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Применить</button>
+                <a href="{{ route('products.index') }}" class="btn btn-secondary">Очистить</a>
+            </div>
+        </div>
+    </form>
 
     <div class="card">
         <div class="card-body">

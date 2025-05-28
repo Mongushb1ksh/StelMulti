@@ -47,6 +47,7 @@
                 <h5 class="card-title">Завершить задачу</h5>
                 <form method="POST" action="{{ route('production.complete', $productionTask) }}">
                     @csrf
+                    <input type="hidden" name="order_id" value="{{ $productionTask->order_id }}">
                     <div class="mb-3">
                         <label for="quality_check" class="form-label">Результаты контроля качества</label>
                         <textarea class="form-control" id="quality_check" name="quality_check" rows="3" required></textarea>

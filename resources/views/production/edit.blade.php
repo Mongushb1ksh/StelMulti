@@ -122,6 +122,10 @@
                                     {{ $productionTask->order->getStatusText() }}
                                 </span>
                             </li>
+                            <li class="list-group-item">
+                                <strong>Общая стоимость:</strong> 
+                                {{ number_format($order->product->unit_price * $order->product->quantity, 2) }} руб.
+                            </li>
                         </ul>
                     @else
                         <div class="alert alert-warning mb-0">
