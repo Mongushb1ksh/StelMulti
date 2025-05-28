@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 
@@ -20,6 +21,7 @@ class Product extends Model
         'quantity',
         'category_id',
         'unit_price',
+        'image',
     ];
 
     public function category()
@@ -39,7 +41,8 @@ class Product extends Model
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
-            'unit_price' => 'required|numeric|min:0'
+            'unit_price' => 'required|numeric|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -52,6 +55,12 @@ class Product extends Model
     public static function createProduct(array $data): self
     {
         $validated = self::validateData($data, true);
+
+        if (isset($validated['image'])) {
+            $path = $validated['image']->store('products', 'public');
+            $validated['image'] = $path;
+        }
+
         return self::create($validated);
     }
 
@@ -60,6 +69,16 @@ class Product extends Model
     {
         $product = self::find($id);
         $validated = self::validateData($data, true);
+
+        if (isset($validated['image'])) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            
+            $path = $validated['image']->store('products', 'public');
+            $validated['image'] = $path;
+        }
+
         $product->update($validated);
         return $product;
     }
@@ -88,6 +107,10 @@ class Product extends Model
     public static function deleteProduct(int $id): void
     {
         $product = self::find($id);
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
         $product->delete();
+        
     }
 }

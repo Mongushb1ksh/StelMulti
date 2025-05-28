@@ -20,7 +20,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('products.update', $product->id) }}">
+                    <form method="POST" action="{{ route('products.update', $product->id) }}" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -59,6 +59,26 @@
                             <label for="unit_price" class="form-label">Цена за единицу</label>
                             <input type="number" step="0.01" class="form-control" id="unit_price" name="unit_price" 
                                    value="{{ old('unit_price', $product->unit_price) }}" min="0" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Изображение товара</label>
+                            @if($product->image)
+                                <div class="mb-2">
+                                    <img src="{{ asset('storage/'.$product->image) }}" alt="Current image" style="max-height: 200px;">
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="remove_image" name="remove_image">
+                                        <label class="form-check-label" for="remove_image">
+                                            Удалить текущее изображение
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+                            <input type="file" class="form-control @error('image') is-invalid @enderror" 
+                                id="image" name="image">
+                            @error('image')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="d-flex justify-content-between">

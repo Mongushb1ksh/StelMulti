@@ -15,14 +15,13 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <div class="product-image-placeholder bg-light d-flex align-items-center justify-content-center" 
-                                 style="height: 200px; border-radius: 4px;">
-                                <span class="text-muted">Изображение товара</span>
-                            </div>
+                        <div class="product-image-placeholder bg-light d-flex align-items-center justify-content-center" 
+                            style="  height: auto; max-width: 700px; border-radius: 8px; overflow: hidden;">
+                            @if($product->image)
+                                <img src="{{ asset('storage/'.$product->image) }}" alt="Изображение товара" class="img-fluid product-image">
+                            @else
+                                <span class="text-muted small">Изображение отсутствует</span>
+                            @endif
                         </div>
                         <div class="col-md-8">
                             <h4 class="text-muted mb-3">Описание</h4>
@@ -180,6 +179,27 @@
     }
     .card-header {
         border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .product-image-placeholder {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; 
+        border-radius: 8px;
+    }
+
+    .product-image-placeholder .text-muted {
+        font-size: 0.9rem;
+        text-align: center;
+        padding: 10px;
     }
 </style>
 @endsection

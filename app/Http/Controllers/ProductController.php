@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -23,7 +24,12 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         try {
-            Product::createProduct($request->all());
+            $data = $request->all();
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image');
+            }
+            
+            Product::createProduct($data);
             return redirect()->route('products.index')->with('success', 'Товар успешно добавлен');
         } catch (\Exception $e){
             return redirect()->back()
@@ -45,7 +51,15 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         try {
-            Product::updateProduct($request->all(), $product->id);
+            $data = $request->all();
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image');
+            }
+            if ($request->has('remove_image')) {
+                $data['image'] = null;
+            }
+            
+            Product::updateProduct($data, $product->id);
             return redirect()->route('products.index')->with('success', 'Товар успешно обновлен');
         } catch (\Exception $e){
             return redirect()->back()
